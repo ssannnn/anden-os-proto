@@ -1,0 +1,16 @@
+{
+  "name": "anden-os",
+  "private": true,
+  "packageManager": "pnpm@11.0.9",
+  "scripts": {
+    "dev": "pnpm --filter @anden/web dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test:e2e": "pnpm --filter @anden/web test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.60.0",
+    "typescript": "6.0.3"
+  }
+}
