@@ -27,14 +27,26 @@ For production deploys, prefer `SUPABASE_URL` plus `SUPABASE_SERVICE_ROLE_KEY` a
 
 ## Local Reset
 
-With the Supabase CLI installed:
+The Supabase CLI is installed as a root dev dependency. The local config uses
+ports `55320`-`55330` to avoid collisions with other Supabase projects.
 
 ```bash
-supabase start
-supabase db reset
+pnpm db:start
+pnpm db:reset
+pnpm validate:db
+pnpm db:stop
 ```
 
-`supabase db reset` applies migrations from `supabase/migrations/` and then runs `supabase/seed.sql`.
+`pnpm db:reset` applies migrations from `supabase/migrations/` and then runs
+`supabase/seed.sql`. `pnpm validate:db` expects the local Supabase stack to be
+running; it runs `pnpm validate:db:artifacts` and
+`supabase db lint --local --schema public --fail-on error`.
+
+If Docker or the local Supabase stack is not available, run only:
+
+```bash
+pnpm validate:db:artifacts
+```
 
 ## Remote Apply
 

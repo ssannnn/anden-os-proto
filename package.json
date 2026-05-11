@@ -8,10 +8,16 @@
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
     "test:e2e": "pnpm --filter @anden/web test:e2e",
-    "validate:db": "node scripts/validate-db-artifacts.mjs"
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset --local",
+    "db:lint": "supabase db lint --local --schema public --fail-on error",
+    "validate:db:artifacts": "node scripts/validate-db-artifacts.mjs",
+    "validate:db": "pnpm validate:db:artifacts && pnpm db:lint"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",
+    "supabase": "^2.98.2",
     "typescript": "6.0.3"
   }
 }
