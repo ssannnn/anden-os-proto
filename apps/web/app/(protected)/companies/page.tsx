@@ -1,5 +1,14 @@
-import { PlaceholderPage } from "../shared/placeholder-page";
+import { CompaniesView } from "./view";
 
-export default function CompaniesPage() {
-  return <PlaceholderPage routeKey="companies" />;
+export default async function CompaniesPage({
+  searchParams
+}: {
+  searchParams: Promise<{
+    sector?: string;
+    status?: string;
+    country?: string;
+    priority?: string;
+  }>;
+}) {
+  return <CompaniesView filters={await searchParams} />;
 }
