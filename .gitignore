@@ -8,3 +8,4 @@ test-results
 .env
 .env*.local
 *.tsbuildinfo
+apps/web/next-env.d.ts
