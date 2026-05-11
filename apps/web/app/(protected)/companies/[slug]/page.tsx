@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { findCompany } from "../../crm/mock-data";
+import { getCompanyData } from "../../data/demo-repository";
 import { BackLink, Badge } from "../../crm/ui";
 
 export default async function CompanyDetailPage({
@@ -8,7 +8,7 @@ export default async function CompanyDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const company = findCompany(slug);
+  const { data: company } = await getCompanyData(slug);
 
   if (!company) {
     notFound();

@@ -1,5 +1,6 @@
 "use client";
 
+import type { DashboardData } from "@anden/db";
 import {
   AlertTriangle,
   ArrowRight,
@@ -13,84 +14,6 @@ import {
 } from "lucide-react";
 import { useLocale } from "../shell/locale-context";
 
-const metrics = [
-  {
-    value: "12",
-    label: { en: "companies tracked", es: "empresas registradas" },
-    tone: "blue"
-  },
-  {
-    value: "4",
-    label: { en: "institutional partners", es: "partners institucionales" },
-    tone: "lime"
-  },
-  {
-    value: "37",
-    label: { en: "documents indexed", es: "documentos indexados" },
-    tone: "orange"
-  },
-  {
-    value: "8",
-    label: { en: "pending workflows", es: "workflows pendientes" },
-    tone: "sky"
-  },
-  {
-    value: "92%",
-    label: { en: "AI retrieval confidence", es: "confianza de retrieval AI" },
-    tone: "periwinkle"
-  },
-  {
-    value: "14",
-    label: { en: "hours saved this week", es: "horas ahorradas esta semana" },
-    tone: "brown"
-  }
-] as const;
-
-const pipeline = [
-  {
-    company: "AtlasPay",
-    sector: "Fintech",
-    status: "Interested",
-    priority: "High",
-    nextAction: "Schedule regulatory onboarding call",
-    readiness: 84
-  },
-  {
-    company: "Civitas Cloud",
-    sector: "GovTech",
-    status: "Briefing",
-    priority: "Medium",
-    nextAction: "Send digital zone benefits memo",
-    readiness: 72
-  },
-  {
-    company: "LedgerGrid",
-    sector: "Infrastructure",
-    status: "Qualification",
-    priority: "High",
-    nextAction: "Validate Knowledge Economy fit",
-    readiness: 68
-  }
-];
-
-const alerts = [
-  "Legal review required for fintech onboarding checklist",
-  "ARCA Free Zone source pack needs final citation check",
-  "Government stakeholder briefing due tomorrow"
-];
-
-const recentQueries = [
-  "What documents should we request from a new fintech company?",
-  "Which partners are most relevant for fintech companies?",
-  "Summarize requirements for Argentina digital zone readiness."
-];
-
-const workflows = [
-  { name: "Company onboarding", state: "Waiting documents", progress: 64 },
-  { name: "Prepare meeting", state: "Brief draft ready", progress: 82 },
-  { name: "Publish institutional content", state: "Outline generated", progress: 46 }
-];
-
 const toneClass = {
   blue: "bg-[var(--anden-blue)] text-white",
   lime: "bg-[var(--anden-lime)] text-[var(--anden-brown-dark)]",
@@ -100,7 +23,13 @@ const toneClass = {
   brown: "bg-[var(--color-ink)] text-[var(--anden-cream-light)]"
 } as const;
 
-export function DashboardView() {
+export function DashboardView({
+  data,
+  dataModeLabel
+}: {
+  data: DashboardData;
+  dataModeLabel: string;
+}) {
   const { locale } = useLocale();
   const isSpanish = locale === "es";
 
@@ -120,21 +49,26 @@ export function DashboardView() {
               : "Executive view of institutional pipeline, documents, workflows, AI queries, alerts, and operating metrics."}
           </p>
         </div>
-        <button
-          type="button"
-          className="inline-flex h-11 items-center justify-between gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--anden-lime)] px-4 text-sm font-semibold text-[var(--anden-brown-dark)]"
-        >
-          <span>
-            {isSpanish
-              ? "Generar brief operativo semanal"
-              : "Generate Weekly Operating Brief"}
+        <div className="flex flex-col items-start gap-3 md:items-end">
+          <span className="rounded-lg border border-[var(--color-border)] bg-[var(--color-canvas)] px-3 py-2 text-xs font-bold text-[var(--color-muted)]">
+            {dataModeLabel}
           </span>
-          <ArrowRight size={17} aria-hidden />
-        </button>
+          <button
+            type="button"
+            className="inline-flex h-11 items-center justify-between gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--anden-lime)] px-4 text-sm font-semibold text-[var(--anden-brown-dark)]"
+          >
+            <span>
+              {isSpanish
+                ? "Generar brief operativo semanal"
+                : "Generate Weekly Operating Brief"}
+            </span>
+            <ArrowRight size={17} aria-hidden />
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-        {metrics.map((metric) => (
+        {data.metrics.map((metric) => (
           <article
             key={metric.label.en}
             className="min-h-28 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4"
@@ -207,7 +141,7 @@ export function DashboardView() {
             }
           />
           <div className="mt-5 space-y-3">
-            {alerts.map((alert) => (
+            {data.alerts.map((alert) => (
               <div
                 key={alert}
                 className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-canvas)] p-4 text-sm font-medium text-[var(--color-ink)]"
@@ -231,7 +165,7 @@ export function DashboardView() {
             }
           />
           <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--color-border)]">
-            {pipeline.map((company) => (
+            {data.pipeline.map((company) => (
               <div
                 key={company.company}
                 className="grid gap-3 border-b border-[var(--color-border)] bg-[var(--color-canvas)] p-4 last:border-b-0 md:grid-cols-[1fr_auto]"
@@ -280,7 +214,7 @@ export function DashboardView() {
               }
             />
             <div className="mt-5 space-y-3">
-              {recentQueries.map((query) => (
+              {data.recentQueries.map((query) => (
                 <p
                   key={query}
                   className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-canvas)] p-4 text-sm leading-6 text-[var(--color-ink)]"
@@ -302,7 +236,7 @@ export function DashboardView() {
               }
             />
             <div className="mt-5 space-y-4">
-              {workflows.map((workflow) => (
+              {data.workflows.map((workflow) => (
                 <div key={workflow.name}>
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="font-semibold text-[var(--color-ink)]">

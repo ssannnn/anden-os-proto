@@ -1,6 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import { notFound } from "next/navigation";
-import { findDocument } from "../mock-data";
+import { getDocumentData } from "../../data/demo-repository";
 import { BackLink, Badge } from "../../crm/ui";
 
 export default async function DocumentDetailPage({
@@ -9,7 +9,7 @@ export default async function DocumentDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const document = findDocument(slug);
+  const { data: document } = await getDocumentData(slug);
 
   if (!document) {
     notFound();

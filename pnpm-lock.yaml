@@ -17,6 +17,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@anden/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       lucide-react:
         specifier: 1.14.0
         version: 1.14.0(react@19.2.6)

@@ -24,6 +24,7 @@ test("dashboard presents the Anden operating pulse with mock metrics", async ({
   await expect(page.getByText("8 pending workflows")).toBeVisible();
   await expect(page.getByText("92% AI retrieval confidence")).toBeVisible();
   await expect(page.getByText("14 hours saved this week")).toBeVisible();
+  await expect(page.getByText("Mock fallback")).toBeVisible();
 
   await expect(
     page.getByRole("heading", { name: /ai operating pulse/i })

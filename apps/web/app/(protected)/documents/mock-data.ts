@@ -1,34 +1,4 @@
-export type DocumentType =
-  | "Regulation"
-  | "Official guidance"
-  | "Internal memo"
-  | "Partner profile"
-  | "Playbook"
-  | "Template";
-
-export type DocumentStatus = "Indexed" | "Review queued" | "Draft";
-
-export type DocumentRecord = {
-  slug: string;
-  title: string;
-  type: DocumentType;
-  sourceLabel: string;
-  sourceUrl?: string;
-  sourcePackPath: string;
-  jurisdiction: "Argentina" | "Internal" | "Global";
-  language: "Spanish" | "English";
-  indexStatus: DocumentStatus;
-  retrievedAt?: string;
-  updatedAt: string;
-  legalReviewRequired: boolean;
-  summary: string;
-  entities: string[];
-  risks: string[];
-  checklist: string[];
-  linkedCompanies: string[];
-  linkedPartners: string[];
-  aiUseCases: string[];
-};
+import type { DocumentRecord } from "@anden/db";
 
 export const documents: DocumentRecord[] = [
   {

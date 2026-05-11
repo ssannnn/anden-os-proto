@@ -1,4 +1,4 @@
-import { partnerSectors, partners } from "../crm/mock-data";
+import type { Partner } from "@anden/db";
 import { Badge, DetailLink, EmptyState, PageHeader, SelectFilter } from "../crm/ui";
 
 type PartnerFilters = {
@@ -6,9 +6,18 @@ type PartnerFilters = {
   type?: string;
 };
 
-const partnerTypes = Array.from(new Set(partners.map((partner) => partner.type)));
+export function PartnersView({
+  partners,
+  filters
+}: {
+  partners: Partner[];
+  filters: PartnerFilters;
+}) {
+  const partnerSectors = uniqueValues(
+    partners.flatMap((partner) => partner.linkedSectors)
+  );
+  const partnerTypes = uniqueValues(partners.map((partner) => partner.type));
 
-export function PartnersView({ filters }: { filters: PartnerFilters }) {
   const filteredPartners = partners.filter((partner) => {
     const sectorMatch =
       !filters.sector ||
@@ -97,4 +106,8 @@ export function PartnersView({ filters }: { filters: PartnerFilters }) {
       )}
     </section>
   );
+}
+
+function uniqueValues(values: string[]) {
+  return Array.from(new Set(values));
 }

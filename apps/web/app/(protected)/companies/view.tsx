@@ -1,10 +1,4 @@
-import {
-  companies,
-  companyCountries,
-  companyPriorities,
-  companySectors,
-  companyStatuses
-} from "../crm/mock-data";
+import type { Company } from "@anden/db";
 import { Badge, DetailLink, EmptyState, PageHeader, SelectFilter } from "../crm/ui";
 
 type CompanyFilters = {
@@ -14,7 +8,20 @@ type CompanyFilters = {
   priority?: string;
 };
 
-export function CompaniesView({ filters }: { filters: CompanyFilters }) {
+export function CompaniesView({
+  companies,
+  filters
+}: {
+  companies: Company[];
+  filters: CompanyFilters;
+}) {
+  const companySectors = uniqueValues(companies.map((company) => company.sector));
+  const companyStatuses = uniqueValues(companies.map((company) => company.status));
+  const companyCountries = uniqueValues(companies.map((company) => company.country));
+  const companyPriorities = uniqueValues(
+    companies.map((company) => company.priority)
+  );
+
   const filteredCompanies = companies.filter((company) => {
     return (
       matches(company.sector, filters.sector) &&
@@ -128,4 +135,8 @@ export function CompaniesView({ filters }: { filters: CompanyFilters }) {
 
 function matches(value: string, filter?: string) {
   return !filter || filter === "All" || value === filter;
+}
+
+function uniqueValues(values: string[]) {
+  return Array.from(new Set(values));
 }

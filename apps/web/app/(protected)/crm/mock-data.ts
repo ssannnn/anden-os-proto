@@ -1,41 +1,4 @@
-export type CompanyStatus =
-  | "Interested"
-  | "Briefing"
-  | "Qualification"
-  | "Onboarding";
-
-export type Priority = "High" | "Medium" | "Low";
-
-export type Company = {
-  slug: string;
-  name: string;
-  sector: string;
-  country: string;
-  status: CompanyStatus;
-  priority: Priority;
-  lastInteraction: string;
-  nextStep: string;
-  documents: string[];
-  aiSummary: string;
-  aiRecommendedAction: string;
-  readiness: number;
-  partnerRelevance: string[];
-};
-
-export type Partner = {
-  slug: string;
-  name: string;
-  type: string;
-  country: string;
-  relevance: "Strategic" | "High" | "Medium";
-  fintechRelevance: number;
-  linkedSectors: string[];
-  lastInteraction: string;
-  nextStep: string;
-  documents: string[];
-  aiSummary: string;
-  recommendedUseCases: string[];
-};
+import type { Company, Partner } from "@anden/db";
 
 export const companies: Company[] = [
   {

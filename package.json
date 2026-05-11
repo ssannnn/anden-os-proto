@@ -7,7 +7,8 @@
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test:e2e": "pnpm --filter @anden/web test:e2e"
+    "test:e2e": "pnpm --filter @anden/web test:e2e",
+    "validate:db": "node scripts/validate-db-artifacts.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",

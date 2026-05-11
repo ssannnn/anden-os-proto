@@ -1,10 +1,5 @@
+import type { DocumentRecord } from "@anden/db";
 import { Upload } from "lucide-react";
-import {
-  documentJurisdictions,
-  documentStatuses,
-  documentTypes,
-  documents
-} from "./mock-data";
 import { Badge, DetailLink, EmptyState, PageHeader, SelectFilter } from "../crm/ui";
 
 type DocumentFilters = {
@@ -13,7 +8,21 @@ type DocumentFilters = {
   status?: string;
 };
 
-export function DocumentsView({ filters }: { filters: DocumentFilters }) {
+export function DocumentsView({
+  documents,
+  filters
+}: {
+  documents: DocumentRecord[];
+  filters: DocumentFilters;
+}) {
+  const documentTypes = uniqueValues(documents.map((document) => document.type));
+  const documentJurisdictions = uniqueValues(
+    documents.map((document) => document.jurisdiction)
+  );
+  const documentStatuses = uniqueValues(
+    documents.map((document) => document.indexStatus)
+  );
+
   const filteredDocuments = documents.filter((document) => {
     return (
       matches(document.type, filters.type) &&
@@ -149,4 +158,8 @@ function Metadata({ label, value }: { label: string; value: string }) {
 
 function matches(value: string, filter?: string) {
   return !filter || filter === "All" || value === filter;
+}
+
+function uniqueValues(values: string[]) {
+  return Array.from(new Set(values));
 }
