@@ -1,5 +1,5 @@
-import { PlaceholderPage } from "../shared/placeholder-page";
+import { DashboardView } from "./dashboard-view";
 
 export default function DashboardPage() {
-  return <PlaceholderPage routeKey="dashboard" />;
+  return <DashboardView />;
 }
