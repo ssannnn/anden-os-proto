@@ -1,0 +1,116 @@
+{
+  "version": "2026-05-11.mock-v1",
+  "product": "Anden OS AI Backoffice Demo",
+  "retrieved_at": "2026-05-11",
+  "notes": [
+    "Regulatory entries are curated source metadata and operational summaries, not legal advice.",
+    "Internal entries are mock demo documents for seeded RAG and document intelligence behavior."
+  ],
+  "documents": [
+    {
+      "slug": "argentina-knowledge-economy-law",
+      "title": "Ley 27.506 - Régimen de Economía del Conocimiento",
+      "path": "regulations/argentina-knowledge-economy-law.md",
+      "source_url": "https://www.argentina.gob.ar/normativa/nacional/ley-27506-324101/actualizacion",
+      "source_type": "regulation",
+      "jurisdiction": "Argentina",
+      "language": "es",
+      "retrieved_at": "2026-05-11",
+      "legal_review_required": true
+    },
+    {
+      "slug": "argentina-knowledge-economy-decree-1034-2020",
+      "title": "Decreto 1034/2020 - Reglamentación Ley 27.506",
+      "path": "regulations/argentina-knowledge-economy-decree-1034-2020.md",
+      "source_url": "https://www.argentina.gob.ar/normativa/nacional/decreto-1034-2020-345431/texto",
+      "source_type": "regulation",
+      "jurisdiction": "Argentina",
+      "language": "es",
+      "retrieved_at": "2026-05-11",
+      "legal_review_required": true
+    },
+    {
+      "slug": "argentina-knowledge-economy-registration",
+      "title": "Argentina.gob.ar - Beneficios Economía del Conocimiento",
+      "path": "regulations/argentina-knowledge-economy-registration.md",
+      "source_url": "https://www.argentina.gob.ar/servicio/acceder-los-beneficios-del-regimen-de-promocion-de-la-economia-del-conocimiento",
+      "source_type": "official_guidance",
+      "jurisdiction": "Argentina",
+      "language": "es",
+      "retrieved_at": "2026-05-11",
+      "legal_review_required": true
+    },
+    {
+      "slug": "argentina-free-zones-law-24331",
+      "title": "Ley 24.331 - Zonas Francas",
+      "path": "regulations/argentina-free-zones-law-24331.md",
+      "source_url": "https://www.argentina.gob.ar/normativa/nacional/ley-24331-725/texto",
+      "source_type": "regulation",
+      "jurisdiction": "Argentina",
+      "language": "es",
+      "retrieved_at": "2026-05-11",
+      "legal_review_required": true
+    },
+    {
+      "slug": "argentina-free-zones-arca-index",
+      "title": "ARCA/AFIP - Zonas Francas normativa index",
+      "path": "regulations/argentina-free-zones-arca.md",
+      "source_url": "https://www.afip.gob.ar/zonasFrancas/ayuda/normativa.asp",
+      "source_type": "official_guidance",
+      "jurisdiction": "Argentina",
+      "language": "es",
+      "retrieved_at": "2026-05-11",
+      "legal_review_required": true
+    },
+    {
+      "slug": "anden-value-proposition",
+      "title": "Andén Value Proposition",
+      "path": "internal/anden-value-proposition.md",
+      "source_type": "internal_memo",
+      "jurisdiction": "Internal",
+      "language": "en",
+      "retrieved_at": "2026-05-11",
+      "legal_review_required": false
+    },
+    {
+      "slug": "digital-zone-company-onboarding-faq",
+      "title": "Digital Zone Company Onboarding FAQ",
+      "path": "internal/digital-zone-company-onboarding-faq.md",
+      "source_type": "internal_memo",
+      "jurisdiction": "Internal",
+      "language": "en",
+      "retrieved_at": "2026-05-11",
+      "legal_review_required": false
+    },
+    {
+      "slug": "institutional-partner-profiles",
+      "title": "Institutional Partner Profiles",
+      "path": "internal/institutional-partner-profiles.md",
+      "source_type": "partner_profile",
+      "jurisdiction": "Global",
+      "language": "en",
+      "retrieved_at": "2026-05-11",
+      "legal_review_required": false
+    },
+    {
+      "slug": "government-stakeholder-meeting-playbook",
+      "title": "Government Stakeholder Meeting Playbook",
+      "path": "internal/government-stakeholder-meeting-playbook.md",
+      "source_type": "playbook",
+      "jurisdiction": "Internal",
+      "language": "en",
+      "retrieved_at": "2026-05-11",
+      "legal_review_required": false
+    },
+    {
+      "slug": "weekly-operating-brief-template",
+      "title": "Weekly Operating Brief Template",
+      "path": "internal/weekly-operating-brief-template.md",
+      "source_type": "template",
+      "jurisdiction": "Internal",
+      "language": "en",
+      "retrieved_at": "2026-05-11",
+      "legal_review_required": false
+    }
+  ]
+}
