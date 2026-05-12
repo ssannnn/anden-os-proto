@@ -53,6 +53,7 @@ pnpm db:stop
 
 ## Demo Docs
 
+- [Local demo runbook](docs/local-demo-runbook.md)
 - [Deploy guide](docs/deploy.md)
 - [7-minute demo script](docs/demo-script.md)
 - [Smoke test checklist](docs/smoke-test.md)
