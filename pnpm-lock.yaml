@@ -35,6 +35,9 @@ importers:
       '@anden/rag':
         specifier: workspace:*
         version: link:../../packages/rag
+      '@anden/workflows':
+        specifier: workspace:*
+        version: link:../../packages/workflows
       lucide-react:
         specifier: 1.14.0
         version: 1.14.0(react@19.2.6)
@@ -107,6 +110,16 @@ importers:
         version: 6.0.3
 
   packages/ui:
+    devDependencies:
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
+  packages/workflows:
+    dependencies:
+      '@anden/rag':
+        specifier: workspace:*
+        version: link:../rag
     devDependencies:
       typescript:
         specifier: 6.0.3

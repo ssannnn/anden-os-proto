@@ -1,5 +1,23 @@
-import { PlaceholderPage } from "../shared/placeholder-page";
+import {
+  getDataModeLabel,
+  getWorkflowRunsData,
+  getWorkflowsData
+} from "../data/demo-repository";
+import { WorkflowsView } from "./view";
 
-export default function WorkflowsPage() {
-  return <PlaceholderPage routeKey="workflows" />;
+export const dynamic = "force-dynamic";
+
+export default async function WorkflowsPage() {
+  const [workflows, runs] = await Promise.all([
+    getWorkflowsData(),
+    getWorkflowRunsData()
+  ]);
+
+  return (
+    <WorkflowsView
+      workflows={workflows.data}
+      initialRuns={runs.data}
+      dataModeLabel={getDataModeLabel(workflows.mode)}
+    />
+  );
 }

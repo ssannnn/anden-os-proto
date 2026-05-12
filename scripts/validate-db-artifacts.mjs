@@ -87,6 +87,14 @@ assertIncludes(
   "grant select, insert on public.assistant_messages to service_role",
   "assistant message service role write grant"
 );
+assertIncludes(
+  readFileSync(
+    "supabase/migrations/202605110005_workflow_run_writes.sql",
+    "utf8"
+  ),
+  "grant select, insert, update on public.workflow_runs to service_role",
+  "workflow run service role write grant"
+);
 assertIncludes(seed, "locale", "AI usage locale seed column");
 assertIncludes(seed, "source_pack_version", "document chunk source metadata");
 assertIncludes(seed, "original_language", "document chunk language metadata");

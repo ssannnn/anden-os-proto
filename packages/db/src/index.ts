@@ -161,6 +161,27 @@ export type WorkflowRecord = {
   steps: unknown[];
 };
 
+export type WorkflowRunRecord = {
+  workflowSlug: string;
+  workflowName: string;
+  category: string;
+  state: string;
+  progress: number;
+  inputs: Record<string, unknown>;
+  outputs: Record<string, unknown>;
+  startedAt: string;
+  completedAt?: string;
+};
+
+export type WorkflowRunInsert = {
+  workflowSlug: string;
+  state: string;
+  progress: number;
+  inputs: Record<string, unknown>;
+  outputs: Record<string, unknown>;
+  completedAt?: string;
+};
+
 export type ReportRecord = {
   slug: string;
   title: string;
@@ -235,6 +256,8 @@ export type DemoRepository = {
   ): Promise<void>;
   listDashboardMetrics(): Promise<DashboardMetric[]>;
   listWorkflows(): Promise<WorkflowRecord[]>;
+  listWorkflowRuns(): Promise<WorkflowRunRecord[]>;
+  recordWorkflowRun(run: WorkflowRunInsert): Promise<void>;
   listReports(): Promise<ReportRecord[]>;
   listAiUsageEvents(): Promise<AiUsageEventRecord[]>;
   recordAiUsageEvent(event: AiUsageEventInsert): Promise<void>;
@@ -331,6 +354,24 @@ type WorkflowRow = {
   category: string;
   status: string;
   steps: unknown[] | null;
+};
+
+type WorkflowIdRow = {
+  id: number;
+};
+
+type WorkflowRunRow = {
+  state: string;
+  progress: number;
+  inputs: Record<string, unknown> | null;
+  outputs: Record<string, unknown> | null;
+  started_at: string;
+  completed_at: string | null;
+  workflows: {
+    slug: string;
+    name: string;
+    category: string;
+  };
 };
 
 type ReportRow = {
@@ -493,6 +534,35 @@ export function createSupabaseRepository(
         order: "sort_order.asc"
       });
       return rows.map(mapWorkflow);
+    },
+    async listWorkflowRuns() {
+      const rows = await fetchRows<WorkflowRunRow>("workflow_runs", {
+        select:
+          "state,progress,inputs,outputs,started_at,completed_at,workflows(slug,name,category)",
+        order: "created_at.desc"
+      });
+      return rows.map(mapWorkflowRun);
+    },
+    async recordWorkflowRun(run: WorkflowRunInsert) {
+      const workflows = await fetchRows<WorkflowIdRow>("workflows", {
+        select: "id",
+        filters: { slug: `eq.${run.workflowSlug}` },
+        limit: 1
+      });
+      const workflowId = workflows[0]?.id;
+
+      if (!workflowId) {
+        throw new Error(`Workflow not found for run insert: ${run.workflowSlug}`);
+      }
+
+      await insertRow("workflow_runs", {
+        workflow_id: workflowId,
+        state: run.state,
+        progress: run.progress,
+        inputs: run.inputs,
+        outputs: run.outputs,
+        completed_at: run.completedAt
+      });
     },
     async listReports() {
       const rows = await fetchRows<ReportRow>("reports", {
@@ -818,6 +888,20 @@ function mapWorkflow(row: WorkflowRow): WorkflowRecord {
     category: row.category,
     status: row.status,
     steps: row.steps ?? []
+  };
+}
+
+function mapWorkflowRun(row: WorkflowRunRow): WorkflowRunRecord {
+  return {
+    workflowSlug: row.workflows.slug,
+    workflowName: row.workflows.name,
+    category: row.workflows.category,
+    state: row.state,
+    progress: row.progress,
+    inputs: row.inputs ?? {},
+    outputs: row.outputs ?? {},
+    startedAt: row.started_at,
+    completedAt: row.completed_at ?? undefined
   };
 }
 

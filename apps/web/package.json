@@ -13,6 +13,7 @@
     "@anden/assistant": "workspace:*",
     "@anden/db": "workspace:*",
     "@anden/rag": "workspace:*",
+    "@anden/workflows": "workspace:*",
     "lucide-react": "1.14.0",
     "next": "16.2.6",
     "react": "19.2.6",

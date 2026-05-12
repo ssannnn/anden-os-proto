@@ -17,7 +17,10 @@ import {
   type DemoDataMode,
   type DocumentRecord,
   type Partner,
-  type SupabaseEnv
+  type SupabaseEnv,
+  type WorkflowRecord,
+  type WorkflowRunInsert,
+  type WorkflowRunRecord
 } from "@anden/db";
 import type { SourcePackChunk } from "@anden/rag";
 import {
@@ -125,6 +128,21 @@ export async function getAssistantMessages(
   );
 }
 
+export async function getWorkflowsData(): Promise<
+  DemoDataResult<WorkflowRecord[]>
+> {
+  return readSupabaseOrMock((repo) => repo.listWorkflows(), mockWorkflows);
+}
+
+export async function getWorkflowRunsData(): Promise<
+  DemoDataResult<WorkflowRunRecord[]>
+> {
+  return readSupabaseOrMock(
+    (repo) => repo.listWorkflowRuns(),
+    mockWorkflowRuns
+  );
+}
+
 export function createRuntimeAiClient() {
   return createAiClient({
     env: getRuntimeAiEnv(),
@@ -175,6 +193,21 @@ export async function recordAssistantExchange({
     });
   } catch (error) {
     console.warn("Supabase assistant exchange write failed.", error);
+  }
+}
+
+export async function recordWorkflowRun(run: WorkflowRunInsert) {
+  const config = getSupabaseWriteConfig(getRuntimeSupabaseEnv());
+
+  if (!config) {
+    return;
+  }
+
+  try {
+    const repo = createSupabaseRepository(config);
+    await repo.recordWorkflowRun(run);
+  } catch (error) {
+    console.warn("Supabase workflow run write failed.", error);
   }
 }
 
@@ -283,6 +316,81 @@ function createMockSourceChunks(): SourcePackChunk[] {
 function createMockEmbedding(index: number) {
   return [index + 1, 1, 0];
 }
+
+const mockWorkflows: WorkflowRecord[] = [
+  {
+    slug: "company-onboarding",
+    name: "Company onboarding",
+    category: "onboarding",
+    status: "Active",
+    steps: [
+      { name: "Create profile", status: "complete" },
+      { name: "Request documents", status: "active" },
+      { name: "Generate summary", status: "queued" },
+      { name: "Validate fit", status: "queued" },
+      { name: "Prepare email", status: "queued" },
+      { name: "Assign next step", status: "queued" }
+    ]
+  },
+  {
+    slug: "prepare-meeting",
+    name: "Prepare meeting",
+    category: "briefing",
+    status: "Active",
+    steps: [
+      { name: "Collect stakeholder context", status: "complete" },
+      { name: "Draft briefing", status: "active" },
+      { name: "List risks", status: "queued" },
+      { name: "Draft follow-up", status: "queued" }
+    ]
+  },
+  {
+    slug: "publish-institutional-content",
+    name: "Publish institutional content",
+    category: "content",
+    status: "Active",
+    steps: [
+      { name: "Generate outline", status: "active" },
+      { name: "Draft blog", status: "queued" },
+      { name: "SEO metadata", status: "queued" },
+      { name: "LinkedIn post", status: "queued" },
+      { name: "Newsletter snippet", status: "queued" }
+    ]
+  }
+];
+
+const mockWorkflowRuns: WorkflowRunRecord[] = [
+  {
+    workflowSlug: "company-onboarding",
+    workflowName: "Company onboarding",
+    category: "onboarding",
+    state: "Waiting documents",
+    progress: 64,
+    inputs: { company: "AtlasPay" },
+    outputs: { nextStep: "Request Knowledge Economy onboarding documents" },
+    startedAt: "2026-05-11T09:00:00.000Z"
+  },
+  {
+    workflowSlug: "prepare-meeting",
+    workflowName: "Prepare meeting",
+    category: "briefing",
+    state: "Brief draft ready",
+    progress: 82,
+    inputs: { company: "Civitas Cloud", stakeholder: "government" },
+    outputs: { briefing: "Draft stakeholder briefing generated" },
+    startedAt: "2026-05-11T10:15:00.000Z"
+  },
+  {
+    workflowSlug: "publish-institutional-content",
+    workflowName: "Publish institutional content",
+    category: "content",
+    state: "Outline generated",
+    progress: 46,
+    inputs: { topic: "Digital Zone operations" },
+    outputs: { outline: "Institutional content outline generated" },
+    startedAt: "2026-05-11T11:30:00.000Z"
+  }
+];
 
 function toAiUsageEventInsert(event: AdapterAiUsageEvent): AiUsageEventInsert {
   return {

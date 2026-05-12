@@ -229,3 +229,95 @@ describe("assistant conversation repository", () => {
     ]);
   });
 });
+
+describe("workflow run repository", () => {
+  it("lists saved workflow runs with workflow metadata", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(
+      Response.json([
+        {
+          state: "Completed",
+          progress: 100,
+          inputs: { company: "AtlasPay" },
+          outputs: {
+            onboardingPlan: "AtlasPay onboarding plan",
+            citations: [{ documentTitle: "Digital Zone Company Onboarding FAQ" }],
+            confidence: 91,
+            legalReviewRequired: true
+          },
+          started_at: "2026-05-11T00:00:00.000Z",
+          completed_at: "2026-05-11T00:00:03.000Z",
+          workflows: {
+            slug: "company-onboarding",
+            name: "Company onboarding",
+            category: "onboarding"
+          }
+        }
+      ])
+    );
+    const repo = createSupabaseRepository({
+      url: "http://127.0.0.1:54321",
+      key: "service-key",
+      fetch
+    });
+
+    await expect(repo.listWorkflowRuns()).resolves.toEqual([
+      {
+        workflowSlug: "company-onboarding",
+        workflowName: "Company onboarding",
+        category: "onboarding",
+        state: "Completed",
+        progress: 100,
+        inputs: { company: "AtlasPay" },
+        outputs: {
+          onboardingPlan: "AtlasPay onboarding plan",
+          citations: [{ documentTitle: "Digital Zone Company Onboarding FAQ" }],
+          confidence: 91,
+          legalReviewRequired: true
+        },
+        startedAt: "2026-05-11T00:00:00.000Z",
+        completedAt: "2026-05-11T00:00:03.000Z"
+      }
+    ]);
+  });
+
+  it("persists a workflow run by resolving the workflow slug", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json([{ id: 11 }]))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+    const repo = createSupabaseRepository({
+      url: "http://127.0.0.1:54321",
+      key: "service-key",
+      fetch
+    });
+
+    await repo.recordWorkflowRun({
+      workflowSlug: "company-onboarding",
+      state: "Completed",
+      progress: 100,
+      inputs: { company: "AtlasPay" },
+      outputs: {
+        onboardingPlan: "AtlasPay onboarding plan",
+        citations: [{ documentTitle: "Digital Zone Company Onboarding FAQ" }],
+        confidence: 91,
+        legalReviewRequired: true
+      },
+      completedAt: "2026-05-11T00:00:03.000Z"
+    });
+
+    const body = JSON.parse(String(fetch.mock.calls[1]?.[1]?.body));
+    expect(body).toEqual({
+      workflow_id: 11,
+      state: "Completed",
+      progress: 100,
+      inputs: { company: "AtlasPay" },
+      outputs: {
+        onboardingPlan: "AtlasPay onboarding plan",
+        citations: [{ documentTitle: "Digital Zone Company Onboarding FAQ" }],
+        confidence: 91,
+        legalReviewRequired: true
+      },
+      completed_at: "2026-05-11T00:00:03.000Z"
+    });
+  });
+});
