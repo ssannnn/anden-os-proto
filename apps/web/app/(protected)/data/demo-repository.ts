@@ -149,6 +149,16 @@ export async function getReportsData(): Promise<DemoDataResult<ReportRecord[]>> 
   return readSupabaseOrMock((repo) => repo.listReports(), mockReports);
 }
 
+export async function getReportData(
+  slug: string
+): Promise<DemoDataResult<ReportRecord | undefined>> {
+  const reports = await getReportsData();
+  return {
+    mode: reports.mode,
+    data: reports.data.find((report) => report.slug === slug)
+  };
+}
+
 export function createRuntimeAiClient() {
   return createAiClient({
     env: getRuntimeAiEnv(),
