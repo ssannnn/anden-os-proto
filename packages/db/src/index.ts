@@ -107,12 +107,23 @@ export type DashboardWorkflow = {
   progress: number;
 };
 
+export type AiSpendState = "normal" | "warning" | "blocked";
+
+export type AiSpendSummary = {
+  totalCostUsd: number;
+  maxCostUsd: number;
+  warningThresholdUsd: number;
+  percentUsed: number;
+  state: AiSpendState;
+};
+
 export type DashboardData = {
   metrics: DashboardMetric[];
   pipeline: DashboardPipelineItem[];
   alerts: string[];
   recentQueries: string[];
   workflows: DashboardWorkflow[];
+  aiSpendStatus: AiSpendSummary;
 };
 
 export type WorkflowRecord = {
@@ -133,6 +144,22 @@ export type ReportRecord = {
   content: Record<string, unknown>;
 };
 
+export type AiUsageEventRecord = {
+  feature: string;
+  provider: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  costUsd: number;
+  locale: "en" | "es";
+  createdAt: string;
+  metadata: Record<string, unknown>;
+};
+
+export type AiUsageEventInsert = Omit<AiUsageEventRecord, "createdAt"> & {
+  createdAt?: string;
+};
+
 export type SupabaseEnv = {
   SUPABASE_URL?: string;
   NEXT_PUBLIC_SUPABASE_URL?: string;
@@ -147,6 +174,8 @@ export type SupabaseReadConfig = {
   fetch?: typeof fetch;
 };
 
+export type SupabaseWriteConfig = SupabaseReadConfig;
+
 export type DemoRepository = {
   listCompanies(): Promise<Company[]>;
   getCompany(slug: string): Promise<Company | undefined>;
@@ -157,6 +186,8 @@ export type DemoRepository = {
   listDashboardMetrics(): Promise<DashboardMetric[]>;
   listWorkflows(): Promise<WorkflowRecord[]>;
   listReports(): Promise<ReportRecord[]>;
+  listAiUsageEvents(): Promise<AiUsageEventRecord[]>;
+  recordAiUsageEvent(event: AiUsageEventInsert): Promise<void>;
 };
 
 type CompanyRow = {
@@ -238,6 +269,18 @@ type ReportRow = {
   content: Record<string, unknown> | null;
 };
 
+type AiUsageEventRow = {
+  feature: string;
+  provider: string;
+  model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  cost_usd: number | string;
+  locale: "en" | "es";
+  created_at: string;
+  metadata: Record<string, unknown> | null;
+};
+
 export function resolveDemoDataMode(env: SupabaseEnv): DemoDataMode {
   return getSupabaseReadConfig(env) ? "supabase" : "mock";
 }
@@ -258,10 +301,24 @@ export function getSupabaseReadConfig(
   return { url, key };
 }
 
+export function getSupabaseWriteConfig(
+  env: SupabaseEnv
+): SupabaseWriteConfig | undefined {
+  const url = env.SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    return undefined;
+  }
+
+  return { url, key };
+}
+
 export function createSupabaseRepository(
   config: SupabaseReadConfig
 ): DemoRepository {
   const fetchRows = createPostgrestReader(config);
+  const insertRow = createPostgrestInserter(config);
 
   return {
     async listCompanies() {
@@ -320,6 +377,25 @@ export function createSupabaseRepository(
         order: "generated_at.desc"
       });
       return rows.map(mapReport);
+    },
+    async listAiUsageEvents() {
+      const rows = await fetchRows<AiUsageEventRow>("ai_usage_events", {
+        order: "created_at.desc"
+      });
+      return rows.map(mapAiUsageEvent);
+    },
+    async recordAiUsageEvent(event: AiUsageEventInsert) {
+      await insertRow("ai_usage_events", {
+        feature: event.feature,
+        provider: event.provider,
+        model: event.model,
+        prompt_tokens: event.promptTokens,
+        completion_tokens: event.completionTokens,
+        cost_usd: event.costUsd,
+        locale: event.locale,
+        created_at: event.createdAt,
+        metadata: event.metadata
+      });
     }
   };
 }
@@ -367,6 +443,34 @@ function createPostgrestReader(config: SupabaseReadConfig) {
     }
 
     return (await response.json()) as T[];
+  };
+}
+
+function createPostgrestInserter(config: SupabaseReadConfig) {
+  const fetchImpl = config.fetch ?? fetch;
+  const baseUrl = config.url.replace(/\/$/, "");
+
+  return async function insertRow(
+    table: string,
+    row: Record<string, unknown>
+  ): Promise<void> {
+    const response = await fetchImpl(`${baseUrl}/rest/v1/${table}`, {
+      method: "POST",
+      headers: {
+        apikey: config.key,
+        authorization: `Bearer ${config.key}`,
+        "content-type": "application/json",
+        prefer: "return=minimal"
+      },
+      body: JSON.stringify(row),
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Supabase insert failed for ${table}: ${response.status} ${response.statusText}`
+      );
+    }
   };
 }
 
@@ -459,6 +563,20 @@ function mapReport(row: ReportRow): ReportRecord {
     periodStart: row.period_start ?? undefined,
     periodEnd: row.period_end ?? undefined,
     content: row.content ?? {}
+  };
+}
+
+function mapAiUsageEvent(row: AiUsageEventRow): AiUsageEventRecord {
+  return {
+    feature: row.feature,
+    provider: row.provider,
+    model: row.model,
+    promptTokens: row.prompt_tokens,
+    completionTokens: row.completion_tokens,
+    costUsd: Number(row.cost_usd),
+    locale: row.locale,
+    createdAt: row.created_at,
+    metadata: row.metadata ?? {}
   };
 }
 

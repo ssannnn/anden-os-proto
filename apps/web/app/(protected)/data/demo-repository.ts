@@ -1,7 +1,13 @@
 import {
+  getAiSpendStatus,
+  type AiUsageEvent as AdapterAiUsageEvent
+} from "@anden/ai";
+import {
   createSupabaseRepository,
   demoDataModeLabels,
   getSupabaseReadConfig,
+  getSupabaseWriteConfig,
+  type AiUsageEventInsert,
   type Company,
   type DashboardData,
   type DemoDataMode,
@@ -67,14 +73,23 @@ export async function getDocumentData(
 
 export async function getDashboardData(): Promise<DemoDataResult<DashboardData>> {
   return readSupabaseOrMock(async (repo) => {
-    const [metrics, workflows] = await Promise.all([
+    const [metrics, workflows, aiUsageEvents] = await Promise.all([
       repo.listDashboardMetrics(),
-      repo.listWorkflows()
+      repo.listWorkflows(),
+      repo.listAiUsageEvents()
     ]);
+    const totalCostUsd = aiUsageEvents.reduce(
+      (sum, event) => sum + event.costUsd,
+      0
+    );
 
     return {
       ...mockDashboardData,
       metrics: metrics.length > 0 ? metrics : mockDashboardData.metrics,
+      aiSpendStatus: getAiSpendStatus({
+        totalCostUsd,
+        maxCostUsd: getRuntimeMaxDemoAiCostUsd()
+      }),
       workflows:
         workflows.length > 0
           ? workflows.slice(0, 3).map((workflow) => ({
@@ -85,6 +100,45 @@ export async function getDashboardData(): Promise<DemoDataResult<DashboardData>>
           : mockDashboardData.workflows
     };
   }, mockDashboardData);
+}
+
+export async function recordAiUsageEvent(event: AdapterAiUsageEvent) {
+  const config = getSupabaseWriteConfig(getRuntimeSupabaseEnv());
+
+  if (!config) {
+    return;
+  }
+
+  try {
+    const repo = createSupabaseRepository(config);
+    await repo.recordAiUsageEvent(toAiUsageEventInsert(event));
+  } catch (error) {
+    console.warn("Supabase AI usage write failed.", error);
+  }
+}
+
+export function createRuntimeAiUsageStore() {
+  return {
+    async getTotalCostUsd() {
+      const config = getSupabaseReadConfig(getRuntimeSupabaseEnv());
+
+      if (!config) {
+        return 0;
+      }
+
+      try {
+        const repo = createSupabaseRepository(config);
+        const events = await repo.listAiUsageEvents();
+        return events.reduce((sum, event) => sum + event.costUsd, 0);
+      } catch (error) {
+        console.warn("Supabase AI usage read failed.", error);
+        return 0;
+      }
+    },
+    async recordUsage(event: AdapterAiUsageEvent) {
+      await recordAiUsageEvent(event);
+    }
+  };
 }
 
 export function getDataModeLabel(mode: DemoDataMode) {
@@ -119,5 +173,28 @@ function getRuntimeSupabaseEnv(): SupabaseEnv {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  };
+}
+
+function getRuntimeMaxDemoAiCostUsd() {
+  const parsed = Number(process.env.MAX_DEMO_AI_COST_USD ?? "5");
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
+}
+
+function toAiUsageEventInsert(event: AdapterAiUsageEvent): AiUsageEventInsert {
+  return {
+    feature: event.feature,
+    provider: event.provider,
+    model: event.model,
+    promptTokens: event.inputTokens,
+    completionTokens: event.outputTokens,
+    costUsd: event.estimatedCostUsd,
+    locale: event.locale,
+    createdAt: event.createdAt,
+    metadata: {
+      requestedProvider: event.requestedProvider,
+      warningState: event.warningState,
+      fallbackReason: event.fallbackReason
+    }
   };
 }

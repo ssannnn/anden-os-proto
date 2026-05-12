@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const port = process.env.E2E_PORT ?? "3000";
+const baseURL = `http://127.0.0.1:${port}`;
+
 export default defineConfig({
   testDir: "./e2e",
   timeout: 30_000,
@@ -7,12 +10,12 @@ export default defineConfig({
     timeout: 10_000
   },
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL,
     trace: "on-first-retry"
   },
   webServer: {
-    command: "pnpm dev",
-    url: "http://127.0.0.1:3000/login",
+    command: `pnpm exec next dev --hostname 127.0.0.1 --port ${port}`,
+    url: `${baseURL}/login`,
     reuseExistingServer: !process.env.CI,
     env: {
       DEMO_ACCESS_CODE: "anden-demo"

@@ -623,6 +623,7 @@ insert into public.ai_usage_events (
   prompt_tokens,
   completion_tokens,
   cost_usd,
+  locale,
   metadata
 )
 values
@@ -633,6 +634,7 @@ values
     0,
     0,
     0,
+    'en',
     '{"reason":"Seeded demo metric; no paid provider call."}'
   ),
   (
@@ -642,6 +644,7 @@ values
     0,
     0,
     0,
+    'en',
     '{"reason":"Golden path placeholder before issue #7/#8."}'
   );
 

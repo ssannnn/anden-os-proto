@@ -23,6 +23,15 @@ const toneClass = {
   brown: "bg-[var(--color-ink)] text-[var(--anden-cream-light)]"
 } as const;
 
+const aiSpendToneClass = {
+  normal:
+    "border-[var(--color-border)] bg-[var(--color-canvas)] text-[var(--color-muted)]",
+  warning:
+    "border-transparent bg-[var(--anden-orange)] text-[var(--anden-brown-dark)]",
+  blocked:
+    "border-transparent bg-[var(--color-ink)] text-[var(--anden-cream-light)]"
+} as const;
+
 export function DashboardView({
   data,
   dataModeLabel
@@ -52,6 +61,12 @@ export function DashboardView({
         <div className="flex flex-col items-start gap-3 md:items-end">
           <span className="rounded-lg border border-[var(--color-border)] bg-[var(--color-canvas)] px-3 py-2 text-xs font-bold text-[var(--color-muted)]">
             {dataModeLabel}
+          </span>
+          <span
+            className={`rounded-lg border px-3 py-2 text-xs font-bold ${aiSpendToneClass[data.aiSpendStatus.state]}`}
+          >
+            AI spend {formatUsd(data.aiSpendStatus.totalCostUsd)} /{" "}
+            {formatUsd(data.aiSpendStatus.maxCostUsd)}
           </span>
           <button
             type="button"
@@ -120,11 +135,11 @@ export function DashboardView({
             />
             <PulseCard
               icon={<Bot size={16} aria-hidden />}
-              title="AI retrieval"
+              title={`AI budget ${data.aiSpendStatus.state}`}
               body={
                 isSpanish
-                  ? "Confianza promedio 92% en consultas internas recientes."
-                  : "Average 92% confidence across recent internal queries."
+                  ? `${Math.round(data.aiSpendStatus.percentUsed * 100)}% del presupuesto usado; hard-stop en ${formatUsd(data.aiSpendStatus.maxCostUsd)}.`
+                  : `${Math.round(data.aiSpendStatus.percentUsed * 100)}% of budget used; hard stop at ${formatUsd(data.aiSpendStatus.maxCostUsd)}.`
               }
             />
           </div>
@@ -307,4 +322,13 @@ function PulseCard({
       <p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">{body}</p>
     </div>
   );
+}
+
+function formatUsd(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
 }

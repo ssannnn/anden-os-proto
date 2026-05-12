@@ -77,5 +77,12 @@ export const mockDashboardData: DashboardData = {
       state: "Outline generated",
       progress: 46
     }
-  ]
+  ],
+  aiSpendStatus: {
+    totalCostUsd: 0,
+    maxCostUsd: 5,
+    warningThresholdUsd: 4,
+    percentUsed: 0,
+    state: "normal"
+  }
 };

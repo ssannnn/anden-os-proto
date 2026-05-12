@@ -61,6 +61,17 @@ for (const slug of requiredSeedSlugs) {
 }
 
 assertIncludes(migration, "extensions.vector(1536)", "pgvector embedding column");
+assertIncludes(
+  readFileSync("supabase/migrations/202605110002_ai_usage_locale.sql", "utf8"),
+  "ai_usage_locale_check",
+  "AI usage locale migration"
+);
+assertIncludes(
+  readFileSync("supabase/migrations/202605110002_ai_usage_locale.sql", "utf8"),
+  "grant insert on public.ai_usage_events to service_role",
+  "AI usage service role insert grant"
+);
+assertIncludes(seed, "locale", "AI usage locale seed column");
 assertIncludes(docs, "supabase db reset", "reset instructions");
 assertIncludes(docs, "SUPABASE_SERVICE_ROLE_KEY", "server env instructions");
 assertIncludes(docs, "Mock fallback", "fallback mode docs");
