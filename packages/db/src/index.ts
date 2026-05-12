@@ -78,6 +78,33 @@ export type DocumentRecord = {
   aiUseCases: string[];
 };
 
+export type DocumentChunkRecord = {
+  chunkId: string;
+  chunkIndex: number;
+  documentSlug: string;
+  documentTitle: string;
+  sourcePackPath: string;
+  sourceUrl?: string;
+  sourceType: string;
+  jurisdiction: string;
+  originalLanguage: "en" | "es";
+  section: string;
+  article?: string;
+  content: string;
+  tokenCount: number;
+  sourcePackVersion: string;
+  legalReviewRequired: boolean;
+  embedding?: number[];
+};
+
+export type DocumentChunkUpsert = {
+  chunkIndex: number;
+  content: string;
+  tokenCount: number;
+  embedding?: number[];
+  metadata: Record<string, unknown>;
+};
+
 export type DashboardMetricTone =
   | "blue"
   | "lime"
@@ -183,6 +210,11 @@ export type DemoRepository = {
   getPartner(slug: string): Promise<Partner | undefined>;
   listDocuments(): Promise<DocumentRecord[]>;
   getDocument(slug: string): Promise<DocumentRecord | undefined>;
+  listDocumentChunks(): Promise<DocumentChunkRecord[]>;
+  upsertDocumentChunks(
+    documentSlug: string,
+    chunks: DocumentChunkUpsert[]
+  ): Promise<void>;
   listDashboardMetrics(): Promise<DashboardMetric[]>;
   listWorkflows(): Promise<WorkflowRecord[]>;
   listReports(): Promise<ReportRecord[]>;
@@ -241,6 +273,28 @@ type DocumentRow = {
   linked_companies: string[] | null;
   linked_partners: string[] | null;
   ai_use_cases: string[] | null;
+};
+
+type DocumentChunkRow = {
+  chunk_index: number;
+  content: string;
+  token_count: number;
+  embedding: number[] | string | null;
+  metadata: Record<string, unknown> | null;
+  documents: {
+    slug: string;
+    title: string;
+    document_type: DocumentType;
+    source_url: string | null;
+    source_pack_path: string;
+    jurisdiction: DocumentRecord["jurisdiction"];
+    language: DocumentRecord["language"];
+    legal_review_required: boolean;
+  };
+};
+
+type DocumentIdRow = {
+  id: number;
 };
 
 type DashboardMetricRow = {
@@ -319,6 +373,7 @@ export function createSupabaseRepository(
 ): DemoRepository {
   const fetchRows = createPostgrestReader(config);
   const insertRow = createPostgrestInserter(config);
+  const upsertRows = createPostgrestUpserter(config);
 
   return {
     async listCompanies() {
@@ -359,6 +414,41 @@ export function createSupabaseRepository(
         limit: 1
       });
       return rows[0] ? mapDocument(rows[0]) : undefined;
+    },
+    async listDocumentChunks() {
+      const rows = await fetchRows<DocumentChunkRow>("document_chunks", {
+        select:
+          "chunk_index,content,token_count,embedding,metadata,documents(slug,title,document_type,source_url,source_pack_path,jurisdiction,language,legal_review_required)",
+        order: "document_id.asc,chunk_index.asc"
+      });
+      return rows.map(mapDocumentChunk);
+    },
+    async upsertDocumentChunks(documentSlug: string, chunks: DocumentChunkUpsert[]) {
+      const documents = await fetchRows<DocumentIdRow>("documents", {
+        select: "id",
+        filters: { slug: `eq.${documentSlug}` },
+        limit: 1
+      });
+      const documentId = documents[0]?.id;
+
+      if (!documentId) {
+        throw new Error(`Document not found for chunk upsert: ${documentSlug}`);
+      }
+
+      await upsertRows(
+        "document_chunks",
+        chunks.map((chunk) => ({
+          document_id: documentId,
+          chunk_index: chunk.chunkIndex,
+          content: chunk.content,
+          token_count: chunk.tokenCount,
+          embedding: chunk.embedding
+            ? toVectorLiteral(chunk.embedding)
+            : undefined,
+          metadata: chunk.metadata
+        })),
+        { onConflict: "document_id,chunk_index" }
+      );
     },
     async listDashboardMetrics() {
       const rows = await fetchRows<DashboardMetricRow>("dashboard_metrics", {
@@ -407,13 +497,14 @@ function createPostgrestReader(config: SupabaseReadConfig) {
   return async function fetchRows<T>(
     table: string,
     options: {
+      select?: string;
       filters?: Record<string, string>;
       order?: string;
       limit?: number;
     } = {}
   ): Promise<T[]> {
     const url = new URL(`${baseUrl}/rest/v1/${table}`);
-    url.searchParams.set("select", "*");
+    url.searchParams.set("select", options.select ?? "*");
 
     if (options.order) {
       url.searchParams.set("order", options.order);
@@ -443,6 +534,38 @@ function createPostgrestReader(config: SupabaseReadConfig) {
     }
 
     return (await response.json()) as T[];
+  };
+}
+
+function createPostgrestUpserter(config: SupabaseReadConfig) {
+  const fetchImpl = config.fetch ?? fetch;
+  const baseUrl = config.url.replace(/\/$/, "");
+
+  return async function upsertRows(
+    table: string,
+    rows: Array<Record<string, unknown>>,
+    options: { onConflict: string }
+  ): Promise<void> {
+    const url = new URL(`${baseUrl}/rest/v1/${table}`);
+    url.searchParams.set("on_conflict", options.onConflict);
+
+    const response = await fetchImpl(url, {
+      method: "POST",
+      headers: {
+        apikey: config.key,
+        authorization: `Bearer ${config.key}`,
+        "content-type": "application/json",
+        prefer: "resolution=merge-duplicates,return=minimal"
+      },
+      body: JSON.stringify(rows),
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Supabase upsert failed for ${table}: ${response.status} ${response.statusText}`
+      );
+    }
   };
 }
 
@@ -533,6 +656,34 @@ function mapDocument(row: DocumentRow): DocumentRecord {
   };
 }
 
+function mapDocumentChunk(row: DocumentChunkRow): DocumentChunkRecord {
+  const metadata = row.metadata ?? {};
+  const documentSlug = row.documents.slug;
+  const chunkIndex = row.chunk_index;
+
+  return {
+    chunkId: `${documentSlug}:${String(chunkIndex).padStart(3, "0")}`,
+    chunkIndex,
+    documentSlug,
+    documentTitle: row.documents.title,
+    sourcePackPath: String(
+      metadata.source_pack_path ?? row.documents.source_pack_path
+    ),
+    sourceUrl: row.documents.source_url ?? undefined,
+    sourceType: String(metadata.source_type ?? row.documents.document_type),
+    jurisdiction: row.documents.jurisdiction,
+    originalLanguage: toSourceLanguage(row.documents.language),
+    section: String(metadata.section ?? "Document"),
+    article:
+      typeof metadata.article === "string" ? metadata.article : undefined,
+    content: row.content,
+    tokenCount: row.token_count,
+    sourcePackVersion: String(metadata.source_pack_version ?? "unknown"),
+    legalReviewRequired: row.documents.legal_review_required,
+    embedding: parseVector(row.embedding)
+  };
+}
+
 function mapDashboardMetric(row: DashboardMetricRow): DashboardMetric {
   return {
     value: row.value,
@@ -578,6 +729,30 @@ function mapAiUsageEvent(row: AiUsageEventRow): AiUsageEventRecord {
     createdAt: row.created_at,
     metadata: row.metadata ?? {}
   };
+}
+
+function toSourceLanguage(language: DocumentRecord["language"]) {
+  return language === "Spanish" ? "es" : "en";
+}
+
+function parseVector(value: number[] | string | null) {
+  if (!value) {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  return value
+    .replace(/^\[|\]$/g, "")
+    .split(",")
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isFinite(item));
+}
+
+function toVectorLiteral(values: number[]) {
+  return `[${values.join(",")}]`;
 }
 
 function formatDate(value: string): string {

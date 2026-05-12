@@ -10,6 +10,7 @@ export type AiEnv = {
   OPENAI_API_KEY?: string;
   OPENAI_BASE_URL?: string;
   OLLAMA_BASE_URL?: string;
+  AI_EMBEDDING_MODEL?: string;
   MAX_DEMO_AI_COST_USD?: string;
 };
 
@@ -37,6 +38,20 @@ export type AiUsageEvent = {
 
 export type GenerateTextResult = {
   text: string;
+  provider: AiProvider;
+  requestedProvider: AiProvider;
+  model: string;
+  usage: AiUsageEvent;
+};
+
+export type EmbedTextsInput = {
+  feature: string;
+  locale: AiLocale;
+  texts: string[];
+};
+
+export type EmbedTextsResult = {
+  embeddings: number[][];
   provider: AiProvider;
   requestedProvider: AiProvider;
   model: string;
@@ -71,6 +86,10 @@ const openAiModelPricingUsdPer1MTokens: Record<
 > = {
   "gpt-4.1-mini": { input: 0.4, output: 1.6 },
   "gpt-4o-mini": { input: 0.15, output: 0.6 }
+};
+
+const openAiEmbeddingPricingUsdPer1MTokens: Record<string, number> = {
+  "text-embedding-3-small": 0.02
 };
 
 export class InMemoryAiUsageStore implements AiUsageStore {
@@ -170,6 +189,93 @@ export function createAiClient(options: AiClientOptions) {
       }
 
       return await createMockResult({
+        input,
+        requestedProvider,
+        fallbackReason: requestedProvider === "mock" ? undefined : "not_configured",
+        spendStatus,
+        usageStore: options.usageStore,
+        now: options.now
+      });
+    },
+    async embedTexts(input: EmbedTextsInput): Promise<EmbedTextsResult> {
+      const requestedProvider = resolveAiProvider(options.env);
+      const model = resolveEmbeddingModel(options.env, requestedProvider);
+      const totalCostUsd = await options.usageStore.getTotalCostUsd();
+      const maxCostUsd = resolveMaxCostUsd(options.env);
+      const spendStatus = getAiSpendStatus({
+        totalCostUsd,
+        maxCostUsd
+      });
+
+      if (requestedProvider === "openai" && !options.env.OPENAI_API_KEY) {
+        return await createMockEmbeddingResult({
+          input,
+          requestedProvider,
+          fallbackReason: "not_configured",
+          spendStatus,
+          usageStore: options.usageStore,
+          now: options.now
+        });
+      }
+
+      if (requestedProvider !== "mock" && spendStatus.state === "blocked") {
+        return await createMockEmbeddingResult({
+          input,
+          requestedProvider,
+          fallbackReason: "budget_exhausted",
+          spendStatus,
+          usageStore: options.usageStore,
+          now: options.now
+        });
+      }
+
+      if (requestedProvider === "openai") {
+        try {
+          return await generateOpenAiEmbeddings({
+            input,
+            model,
+            env: options.env,
+            fetchImpl: options.fetch ?? globalThis.fetch,
+            usageStore: options.usageStore,
+            spendStatus,
+            now: options.now
+          });
+        } catch {
+          return await createMockEmbeddingResult({
+            input,
+            requestedProvider,
+            fallbackReason: "provider_error",
+            spendStatus,
+            usageStore: options.usageStore,
+            now: options.now
+          });
+        }
+      }
+
+      if (requestedProvider === "ollama") {
+        try {
+          return await generateOllamaEmbeddings({
+            input,
+            model,
+            env: options.env,
+            fetchImpl: options.fetch ?? globalThis.fetch,
+            usageStore: options.usageStore,
+            spendStatus,
+            now: options.now
+          });
+        } catch {
+          return await createMockEmbeddingResult({
+            input,
+            requestedProvider,
+            fallbackReason: "provider_error",
+            spendStatus,
+            usageStore: options.usageStore,
+            now: options.now
+          });
+        }
+      }
+
+      return await createMockEmbeddingResult({
         input,
         requestedProvider,
         fallbackReason: requestedProvider === "mock" ? undefined : "not_configured",
@@ -369,6 +475,81 @@ function extractOpenAiText(body: OpenAiResponseBody) {
   return text;
 }
 
+async function generateOpenAiEmbeddings({
+  input,
+  model,
+  env,
+  fetchImpl,
+  usageStore,
+  spendStatus,
+  now
+}: {
+  input: EmbedTextsInput;
+  model: string;
+  env: AiEnv;
+  fetchImpl: typeof globalThis.fetch;
+  usageStore: AiUsageStore;
+  spendStatus: AiSpendStatus;
+  now?: () => Date;
+}): Promise<EmbedTextsResult> {
+  const baseUrl = (env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(
+    /\/$/,
+    ""
+  );
+  const response = await fetchImpl(`${baseUrl}/embeddings`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      model,
+      input: input.texts
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI embeddings request failed: ${response.status}`);
+  }
+
+  const body = (await response.json()) as OpenAiEmbeddingResponseBody;
+  const embeddings = body.data.map((item) => item.embedding);
+  const inputTokens =
+    body.usage?.prompt_tokens ?? estimateTokens(input.texts.join("\n"));
+  const usage: AiUsageEvent = {
+    feature: input.feature,
+    provider: "openai",
+    requestedProvider: "openai",
+    model,
+    inputTokens,
+    outputTokens: 0,
+    estimatedCostUsd: estimateOpenAiEmbeddingCostUsd({
+      model,
+      inputTokens
+    }),
+    locale: input.locale,
+    createdAt: (now?.() ?? new Date()).toISOString(),
+    warningState: spendStatus.state
+  };
+
+  await usageStore.recordUsage(usage);
+
+  return {
+    embeddings,
+    provider: "openai",
+    requestedProvider: "openai",
+    model,
+    usage
+  };
+}
+
+type OpenAiEmbeddingResponseBody = {
+  data: Array<{ embedding: number[] }>;
+  usage?: {
+    prompt_tokens?: number;
+  };
+};
+
 export function estimateOpenAiCostUsd({
   model,
   inputTokens,
@@ -386,6 +567,20 @@ export function estimateOpenAiCostUsd({
     (inputTokens / 1_000_000) * pricing.input +
       (outputTokens / 1_000_000) * pricing.output
   );
+}
+
+export function estimateOpenAiEmbeddingCostUsd({
+  model,
+  inputTokens
+}: {
+  model: string;
+  inputTokens: number;
+}) {
+  const inputPrice =
+    openAiEmbeddingPricingUsdPer1MTokens[model] ??
+    openAiEmbeddingPricingUsdPer1MTokens["text-embedding-3-small"];
+
+  return roundUsd((inputTokens / 1_000_000) * inputPrice);
 }
 
 async function generateOllamaText({
@@ -462,6 +657,116 @@ async function generateOllamaText({
   };
 }
 
+async function generateOllamaEmbeddings({
+  input,
+  model,
+  env,
+  fetchImpl,
+  usageStore,
+  spendStatus,
+  now
+}: {
+  input: EmbedTextsInput;
+  model: string;
+  env: AiEnv;
+  fetchImpl: typeof globalThis.fetch;
+  usageStore: AiUsageStore;
+  spendStatus: AiSpendStatus;
+  now?: () => Date;
+}): Promise<EmbedTextsResult> {
+  const baseUrl = (env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434").replace(
+    /\/$/,
+    ""
+  );
+  const response = await fetchImpl(`${baseUrl}/api/embed`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      model,
+      input: input.texts
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama embeddings request failed: ${response.status}`);
+  }
+
+  const body = (await response.json()) as {
+    embeddings?: number[][];
+    prompt_eval_count?: number;
+  };
+
+  if (!body.embeddings) {
+    throw new Error("Ollama response did not include embeddings.");
+  }
+
+  const usage: AiUsageEvent = {
+    feature: input.feature,
+    provider: "ollama",
+    requestedProvider: "ollama",
+    model,
+    inputTokens: body.prompt_eval_count ?? estimateTokens(input.texts.join("\n")),
+    outputTokens: 0,
+    estimatedCostUsd: 0,
+    locale: input.locale,
+    createdAt: (now?.() ?? new Date()).toISOString(),
+    warningState: spendStatus.state
+  };
+
+  await usageStore.recordUsage(usage);
+
+  return {
+    embeddings: body.embeddings,
+    provider: "ollama",
+    requestedProvider: "ollama",
+    model,
+    usage
+  };
+}
+
+async function createMockEmbeddingResult({
+  input,
+  requestedProvider,
+  fallbackReason,
+  spendStatus,
+  usageStore,
+  now
+}: {
+  input: EmbedTextsInput;
+  requestedProvider: AiProvider;
+  fallbackReason?: AiUsageEvent["fallbackReason"];
+  spendStatus: AiSpendStatus;
+  usageStore: AiUsageStore;
+  now?: () => Date;
+}): Promise<EmbedTextsResult> {
+  const embeddings = input.texts.map(createDeterministicEmbedding);
+  const usage: AiUsageEvent = {
+    feature: input.feature,
+    provider: "mock",
+    requestedProvider,
+    model: "mock-embedding-1536",
+    inputTokens: estimateTokens(input.texts.join("\n")),
+    outputTokens: 0,
+    estimatedCostUsd: 0,
+    locale: input.locale,
+    createdAt: (now?.() ?? new Date()).toISOString(),
+    warningState: spendStatus.state,
+    fallbackReason
+  };
+
+  await usageStore.recordUsage(usage);
+
+  return {
+    embeddings,
+    provider: "mock",
+    requestedProvider,
+    model: "mock-embedding-1536",
+    usage
+  };
+}
+
 function resolveModel(env: AiEnv, provider: AiProvider) {
   if (env.AI_MODEL) {
     return env.AI_MODEL;
@@ -478,9 +783,43 @@ function resolveModel(env: AiEnv, provider: AiProvider) {
   return "mock-deterministic";
 }
 
+function resolveEmbeddingModel(env: AiEnv, provider: AiProvider) {
+  if (env.AI_EMBEDDING_MODEL) {
+    return env.AI_EMBEDDING_MODEL;
+  }
+
+  if (provider === "openai") {
+    return "text-embedding-3-small";
+  }
+
+  if (provider === "ollama") {
+    return "nomic-embed-text";
+  }
+
+  return "mock-embedding-1536";
+}
+
 function resolveMaxCostUsd(env: AiEnv) {
   const parsed = Number(env.MAX_DEMO_AI_COST_USD ?? "5");
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
+}
+
+function createDeterministicEmbedding(text: string) {
+  const embedding = Array.from({ length: 1536 }, () => 0);
+  const normalized = text.toLowerCase();
+
+  for (let index = 0; index < normalized.length; index += 1) {
+    const code = normalized.charCodeAt(index);
+    embedding[code % embedding.length] += 1;
+  }
+
+  const magnitude = Math.sqrt(
+    embedding.reduce((sum, value) => sum + value * value, 0)
+  );
+
+  return magnitude === 0
+    ? embedding
+    : embedding.map((value) => roundEmbeddingValue(value / magnitude));
 }
 
 function estimateTokens(text: string) {
@@ -488,5 +827,9 @@ function estimateTokens(text: string) {
 }
 
 function roundUsd(value: number) {
+  return Math.round(value * 1_000_000) / 1_000_000;
+}
+
+function roundEmbeddingValue(value: number) {
   return Math.round(value * 1_000_000) / 1_000_000;
 }

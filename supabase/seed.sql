@@ -467,7 +467,19 @@ values
   );
 
 insert into public.document_chunks (document_id, chunk_index, content, token_count, metadata)
-select id, 0, summary, 80, jsonb_build_object('source_pack_path', source_pack_path)
+select
+  id,
+  0,
+  summary,
+  80,
+  jsonb_build_object(
+    'source_pack_path', source_pack_path,
+    'source_type', lower(replace(document_type, ' ', '_')),
+    'source_pack_version', '2026-05-11.mock-v1',
+    'section', 'Operational Summary',
+    'original_language', case when language = 'Spanish' then 'es' else 'en' end,
+    'legal_review_required', legal_review_required
+  )
 from public.documents;
 
 insert into public.workflows (slug, name, category, status, description, sort_order, steps, trigger_schema)

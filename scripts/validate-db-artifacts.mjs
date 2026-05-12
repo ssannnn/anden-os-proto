@@ -71,7 +71,17 @@ assertIncludes(
   "grant insert on public.ai_usage_events to service_role",
   "AI usage service role insert grant"
 );
+assertIncludes(
+  readFileSync(
+    "supabase/migrations/202605110003_rag_document_chunk_writes.sql",
+    "utf8"
+  ),
+  "grant select, insert, update, delete on public.document_chunks to service_role",
+  "RAG document chunk service role write grant"
+);
 assertIncludes(seed, "locale", "AI usage locale seed column");
+assertIncludes(seed, "source_pack_version", "document chunk source metadata");
+assertIncludes(seed, "original_language", "document chunk language metadata");
 assertIncludes(docs, "supabase db reset", "reset instructions");
 assertIncludes(docs, "SUPABASE_SERVICE_ROLE_KEY", "server env instructions");
 assertIncludes(docs, "Mock fallback", "fallback mode docs");

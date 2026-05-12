@@ -164,6 +164,53 @@ describe("AI provider adapter", () => {
       estimatedCostUsd: 0
     });
   });
+
+  it("generates OpenAI embeddings through the provider adapter and records estimated usage", async () => {
+    const usageStore = new InMemoryAiUsageStore();
+    const fetch = vi.fn(async () =>
+      Response.json({
+        data: [
+          { embedding: [0.1, 0.2, 0.3] },
+          { embedding: [0.4, 0.5, 0.6] }
+        ],
+        usage: {
+          prompt_tokens: 120
+        }
+      })
+    );
+    const client = createAiClient({
+      env: {
+        AI_PROVIDER: "openai",
+        OPENAI_API_KEY: "test-key",
+        AI_EMBEDDING_MODEL: "text-embedding-3-small"
+      },
+      usageStore,
+      fetch
+    });
+
+    const result = await client.embedTexts({
+      feature: "rag_indexing",
+      locale: "en",
+      texts: ["Anden value proposition", "Digital zone onboarding"]
+    });
+
+    expect(result.provider).toBe("openai");
+    expect(result.model).toBe("text-embedding-3-small");
+    expect(result.embeddings).toEqual([
+      [0.1, 0.2, 0.3],
+      [0.4, 0.5, 0.6]
+    ]);
+    expect(result.usage).toMatchObject({
+      feature: "rag_indexing",
+      provider: "openai",
+      model: "text-embedding-3-small",
+      inputTokens: 120,
+      outputTokens: 0,
+      locale: "en"
+    });
+    expect(result.usage.estimatedCostUsd).toBeGreaterThan(0);
+    expect(fetch).toHaveBeenCalledOnce();
+  });
 });
 
 function usageEvent(overrides: Partial<AiUsageEvent> = {}): AiUsageEvent {
