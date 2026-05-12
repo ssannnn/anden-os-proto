@@ -53,7 +53,7 @@ Business data is mocked. Argentina regulatory sources are real and curated from 
 28. As a demo owner, I want hosted AI usage capped at USD 5, so that the demo cannot run up unexpected costs.
 29. As a demo owner, I want the app to fall back to mock AI when the cost limit is reached, so that the demo remains usable.
 30. As a stakeholder, I want the UI to use Andén's visual identity, so that the product feels native to the company.
-31. As a user, I want light and dark mode, so that the demo feels polished and adaptable.
+31. As a user, I want a polished light theme, so that the demo feels consistent and shareable.
 32. As a user, I want the app to be usable on desktop and mobile, so that it can be shared and reviewed flexibly.
 
 ## Implementation Decisions
@@ -94,7 +94,7 @@ Major modules:
 - Workflow run engine for simulated workflows
 - Weekly operating brief generator
 - Reports history
-- i18n and theme state
+- i18n and light-theme polish
 
 ## Testing Decisions
 
@@ -153,5 +153,5 @@ Definition of done:
 - regulatory responses cite official curated sources
 - weekly operating brief generates and persists
 - cost guard blocks hosted AI after USD 5 and falls back to mock
-- light/dark and EN/ES work
+- light theme and EN/ES work
 - no visible errors in desktop or mobile demo paths

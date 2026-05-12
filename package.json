@@ -14,7 +14,9 @@
     "db:reset": "supabase db reset --local",
     "db:lint": "supabase db lint --local --schema public --fail-on error",
     "validate:db:artifacts": "node scripts/validate-db-artifacts.mjs",
-    "validate:db": "pnpm validate:db:artifacts && pnpm db:lint"
+    "validate:db": "pnpm validate:db:artifacts && pnpm db:lint",
+    "demo:reset:local": "pnpm db:reset",
+    "demo:verify": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm validate:db:artifacts && pnpm build && pnpm test:e2e"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",

@@ -48,6 +48,8 @@ If Docker or the local Supabase stack is not available, run only:
 pnpm validate:db:artifacts
 ```
 
+For demo reset convenience, `pnpm demo:reset:local` aliases `pnpm db:reset`.
+
 ## Remote Apply
 
 After linking a hosted project:

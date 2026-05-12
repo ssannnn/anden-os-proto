@@ -28,7 +28,7 @@ Type: AFK
 
 Blocked by: None
 
-Build the pnpm workspace, Next.js web app, shared packages, Andén brand tokens, light/dark theme foundation, app shell, and password gate.
+Build the pnpm workspace, Next.js web app, shared packages, Andén brand tokens, light-theme foundation, app shell, and password gate.
 
 ## 2. Build dashboard shell with mocked operational data
 
@@ -110,13 +110,13 @@ Blocked by: 10
 
 Build `/reports` with generated brief history, report detail, citations, legal review items, locale metadata, and export/share affordances suitable for the demo.
 
-## 12. Finish EN/ES and light/dark polish
+## 12. Finish EN/ES and light-theme polish
 
 Type: AFK
 
 Blocked by: 2, 3, 8, 9, 10, and 11
 
-Apply global EN/ES dictionaries, persist language selection, ensure AI outputs use active locale, finish dark mode surfaces, and verify charts/badges/tables in both themes.
+Apply global EN/ES dictionaries, persist language selection, ensure AI outputs use active locale, remove dark-mode affordances, and verify charts/badges/tables in the light theme.
 
 ## 13. Demo hardening, script, and deploy
 

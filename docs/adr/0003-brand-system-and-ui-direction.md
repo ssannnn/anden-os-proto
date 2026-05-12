@@ -37,14 +37,15 @@ Use:
 - Jost for dense operational UI
 - Fraunces for selected headings and brand moments
 - Alfarn only if licensing permits and only for brand moments
-- cream and cream-light as light-mode surfaces
+- cream and cream-light as the primary product surfaces
 - brown-dark as the primary ink
 - lime for primary action and success emphasis
 - orange for warnings, risks, and review states
 - blue/periwinkle for AI and institutional surfaces
 - subtle route/circuit patterns recreated in the app, not copied wholesale from the site
 
-Support light and dark mode from the start.
+Use a polished light theme for the demo. Dark mode is deferred until there is a
+clear product need and enough QA time to verify every operational surface.
 
 The visual direction is operational-dense with brand-rich moments:
 

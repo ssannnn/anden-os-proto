@@ -32,7 +32,7 @@ The MVP includes:
 - executive reports with weekly operating brief generation
 - password gate
 - EN/ES language selector
-- light/dark mode
+- polished light theme
 - deployable public URL protected by password
 
 The guided demo target duration is seven minutes.
@@ -43,4 +43,4 @@ The app should prioritize operational density and executive clarity over marketi
 
 Government portal features, full CRM editing, real company records, production workflow authoring, and complex auth are out of scope for the MVP.
 
-The MVP is complete when the password-protected deploy works, the 5 golden prompts work in EN/ES with citations, the dashboard/CRM/documents/workflows/reports flows are navigable, the weekly operating brief generates and persists, and the USD 5 cost guard is active.
+The MVP is complete when the password-protected deploy works, the 5 golden prompts work in EN/ES with citations, the dashboard/CRM/documents/workflows/reports flows are navigable, the weekly operating brief generates and persists, the light theme is polished, and the USD 5 cost guard is active.
