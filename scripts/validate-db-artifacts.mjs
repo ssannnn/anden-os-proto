@@ -79,6 +79,14 @@ assertIncludes(
   "grant select, insert, update, delete on public.document_chunks to service_role",
   "RAG document chunk service role write grant"
 );
+assertIncludes(
+  readFileSync(
+    "supabase/migrations/202605110004_assistant_message_writes.sql",
+    "utf8"
+  ),
+  "grant select, insert on public.assistant_messages to service_role",
+  "assistant message service role write grant"
+);
 assertIncludes(seed, "locale", "AI usage locale seed column");
 assertIncludes(seed, "source_pack_version", "document chunk source metadata");
 assertIncludes(seed, "original_language", "document chunk language metadata");

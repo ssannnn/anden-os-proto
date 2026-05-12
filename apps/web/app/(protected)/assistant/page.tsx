@@ -1,5 +1,5 @@
-import { PlaceholderPage } from "../shared/placeholder-page";
+import { AssistantView } from "./view";
 
 export default function AssistantPage() {
-  return <PlaceholderPage routeKey="assistant" />;
+  return <AssistantView />;
 }

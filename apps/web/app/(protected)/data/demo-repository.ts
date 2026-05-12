@@ -1,13 +1,17 @@
 import {
+  createAiClient,
   getAiSpendStatus,
+  type AiEnv,
   type AiUsageEvent as AdapterAiUsageEvent
 } from "@anden/ai";
+import type { AssistantAnswer } from "@anden/assistant";
 import {
   createSupabaseRepository,
   demoDataModeLabels,
   getSupabaseReadConfig,
   getSupabaseWriteConfig,
   type AiUsageEventInsert,
+  type AssistantMessageRecord,
   type Company,
   type DashboardData,
   type DemoDataMode,
@@ -15,6 +19,7 @@ import {
   type Partner,
   type SupabaseEnv
 } from "@anden/db";
+import type { SourcePackChunk } from "@anden/rag";
 import {
   companies as mockCompanies,
   partners as mockPartners
@@ -102,6 +107,31 @@ export async function getDashboardData(): Promise<DemoDataResult<DashboardData>>
   }, mockDashboardData);
 }
 
+export async function getAssistantChunks(): Promise<
+  DemoDataResult<SourcePackChunk[]>
+> {
+  return readSupabaseOrMock(
+    (repo) => repo.listDocumentChunks(),
+    createMockSourceChunks()
+  );
+}
+
+export async function getAssistantMessages(
+  threadSlug = "default"
+): Promise<DemoDataResult<AssistantMessageRecord[]>> {
+  return readSupabaseOrMock(
+    (repo) => repo.listAssistantMessages(threadSlug),
+    []
+  );
+}
+
+export function createRuntimeAiClient() {
+  return createAiClient({
+    env: getRuntimeAiEnv(),
+    usageStore: createRuntimeAiUsageStore()
+  });
+}
+
 export async function recordAiUsageEvent(event: AdapterAiUsageEvent) {
   const config = getSupabaseWriteConfig(getRuntimeSupabaseEnv());
 
@@ -114,6 +144,37 @@ export async function recordAiUsageEvent(event: AdapterAiUsageEvent) {
     await repo.recordAiUsageEvent(toAiUsageEventInsert(event));
   } catch (error) {
     console.warn("Supabase AI usage write failed.", error);
+  }
+}
+
+export async function recordAssistantExchange({
+  question,
+  answer,
+  threadSlug = "default"
+}: {
+  question: string;
+  answer: AssistantAnswer;
+  threadSlug?: string;
+}) {
+  const config = getSupabaseWriteConfig(getRuntimeSupabaseEnv());
+
+  if (!config) {
+    return;
+  }
+
+  try {
+    const repo = createSupabaseRepository(config);
+    await repo.recordAssistantExchange({
+      threadSlug,
+      title: "Anden OS assistant",
+      locale: answer.locale,
+      userContent: question,
+      assistantContent: `${answer.sourcedAnswer}\n\n${answer.operationalInference}`,
+      citations: answer.citations,
+      confidence: answer.confidence
+    });
+  } catch (error) {
+    console.warn("Supabase assistant exchange write failed.", error);
   }
 }
 
@@ -179,6 +240,48 @@ function getRuntimeSupabaseEnv(): SupabaseEnv {
 function getRuntimeMaxDemoAiCostUsd() {
   const parsed = Number(process.env.MAX_DEMO_AI_COST_USD ?? "5");
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
+}
+
+function getRuntimeAiEnv(): AiEnv {
+  return {
+    AI_PROVIDER: process.env.AI_PROVIDER,
+    AI_MODEL: process.env.AI_MODEL,
+    AI_EMBEDDING_MODEL: process.env.AI_EMBEDDING_MODEL,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    OPENAI_BASE_URL: process.env.OPENAI_BASE_URL,
+    OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+    MAX_DEMO_AI_COST_USD: process.env.MAX_DEMO_AI_COST_USD
+  };
+}
+
+function createMockSourceChunks(): SourcePackChunk[] {
+  return mockDocuments.map((document, index) => ({
+    chunkId: `${document.slug}:000`,
+    chunkIndex: 0,
+    documentSlug: document.slug,
+    documentTitle: document.title,
+    sourcePackPath: document.sourcePackPath,
+    sourceUrl: document.sourceUrl,
+    sourceType: document.type.toLowerCase().replace(/\s+/g, "_"),
+    jurisdiction: document.jurisdiction,
+    originalLanguage: document.language === "Spanish" ? "es" : "en",
+    section: "Operational Summary",
+    content: [
+      document.summary,
+      `Entities: ${document.entities.join(", ")}`,
+      `Checklist: ${document.checklist.join(" ")}`,
+      `Risks: ${document.risks.join(" ")}`,
+      `Use cases: ${document.aiUseCases.join(", ")}`
+    ].join("\n"),
+    tokenCount: 120,
+    sourcePackVersion: "2026-05-11.mock-v1",
+    legalReviewRequired: document.legalReviewRequired,
+    embedding: createMockEmbedding(index)
+  }));
+}
+
+function createMockEmbedding(index: number) {
+  return [index + 1, 1, 0];
 }
 
 function toAiUsageEventInsert(event: AdapterAiUsageEvent): AiUsageEventInsert {

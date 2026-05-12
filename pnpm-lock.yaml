@@ -26,9 +26,15 @@ importers:
       '@anden/ai':
         specifier: workspace:*
         version: link:../../packages/ai
+      '@anden/assistant':
+        specifier: workspace:*
+        version: link:../../packages/assistant
       '@anden/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@anden/rag':
+        specifier: workspace:*
+        version: link:../../packages/rag
       lucide-react:
         specifier: 1.14.0
         version: 1.14.0(react@19.2.6)
@@ -68,6 +74,19 @@ importers:
         version: 4.3.0
 
   packages/ai:
+    devDependencies:
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
+  packages/assistant:
+    dependencies:
+      '@anden/ai':
+        specifier: workspace:*
+        version: link:../ai
+      '@anden/rag':
+        specifier: workspace:*
+        version: link:../rag
     devDependencies:
       typescript:
         specifier: 6.0.3

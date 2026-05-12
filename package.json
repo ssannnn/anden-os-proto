@@ -6,7 +6,7 @@
     "dev": "pnpm --filter @anden/web dev",
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
-    "test:unit": "pnpm --filter @anden/ai --filter @anden/db --filter @anden/rag test",
+    "test:unit": "pnpm --filter @anden/ai --filter @anden/assistant --filter @anden/db --filter @anden/rag test",
     "typecheck": "pnpm -r --if-present typecheck",
     "test:e2e": "pnpm --filter @anden/web test:e2e",
     "db:start": "supabase start",

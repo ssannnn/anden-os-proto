@@ -139,3 +139,93 @@ describe("document chunk repository", () => {
     ]);
   });
 });
+
+describe("assistant conversation repository", () => {
+  it("lists assistant messages for a persisted thread", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json([{ id: 7 }]))
+      .mockResolvedValueOnce(
+        Response.json([
+          {
+            role: "user",
+            content: "What is Anden's value proposition?",
+            citations: null,
+            confidence: null,
+            created_at: "2026-05-11T00:00:00.000Z"
+          },
+          {
+            role: "assistant",
+            content: "Anden OS is an internal AI backoffice.",
+            citations: [{ documentTitle: "Anden Value Proposition" }],
+            confidence: "92.00",
+            created_at: "2026-05-11T00:00:01.000Z"
+          }
+        ])
+      );
+    const repo = createSupabaseRepository({
+      url: "http://127.0.0.1:54321",
+      key: "service-key",
+      fetch
+    });
+
+    await expect(repo.listAssistantMessages("default")).resolves.toEqual([
+      {
+        role: "user",
+        content: "What is Anden's value proposition?",
+        citations: [],
+        confidence: undefined,
+        createdAt: "2026-05-11T00:00:00.000Z"
+      },
+      {
+        role: "assistant",
+        content: "Anden OS is an internal AI backoffice.",
+        citations: [{ documentTitle: "Anden Value Proposition" }],
+        confidence: 92,
+        createdAt: "2026-05-11T00:00:01.000Z"
+      }
+    ]);
+  });
+
+  it("persists an assistant exchange into a thread and two messages", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json([]))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }))
+      .mockResolvedValueOnce(Response.json([{ id: 7 }]))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+    const repo = createSupabaseRepository({
+      url: "http://127.0.0.1:54321",
+      key: "service-key",
+      fetch
+    });
+
+    await repo.recordAssistantExchange({
+      threadSlug: "default",
+      title: "Assistant demo thread",
+      locale: "en",
+      userContent: "What is Anden's value proposition?",
+      assistantContent: "Anden OS is an internal AI backoffice.",
+      citations: [{ documentTitle: "Anden Value Proposition" }],
+      confidence: 92
+    });
+
+    const messageBody = JSON.parse(String(fetch.mock.calls[3]?.[1]?.body));
+    expect(messageBody).toEqual([
+      {
+        thread_id: 7,
+        role: "user",
+        content: "What is Anden's value proposition?",
+        citations: [],
+        confidence: null
+      },
+      {
+        thread_id: 7,
+        role: "assistant",
+        content: "Anden OS is an internal AI backoffice.",
+        citations: [{ documentTitle: "Anden Value Proposition" }],
+        confidence: 92
+      }
+    ]);
+  });
+});

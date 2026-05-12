@@ -187,6 +187,24 @@ export type AiUsageEventInsert = Omit<AiUsageEventRecord, "createdAt"> & {
   createdAt?: string;
 };
 
+export type AssistantMessageRecord = {
+  role: "user" | "assistant" | "system";
+  content: string;
+  citations: unknown[];
+  confidence?: number;
+  createdAt: string;
+};
+
+export type AssistantExchangeInsert = {
+  threadSlug: string;
+  title: string;
+  locale: "en" | "es";
+  userContent: string;
+  assistantContent: string;
+  citations: unknown[];
+  confidence?: number;
+};
+
 export type SupabaseEnv = {
   SUPABASE_URL?: string;
   NEXT_PUBLIC_SUPABASE_URL?: string;
@@ -220,6 +238,8 @@ export type DemoRepository = {
   listReports(): Promise<ReportRecord[]>;
   listAiUsageEvents(): Promise<AiUsageEventRecord[]>;
   recordAiUsageEvent(event: AiUsageEventInsert): Promise<void>;
+  listAssistantMessages(threadSlug: string): Promise<AssistantMessageRecord[]>;
+  recordAssistantExchange(exchange: AssistantExchangeInsert): Promise<void>;
 };
 
 type CompanyRow = {
@@ -333,6 +353,18 @@ type AiUsageEventRow = {
   locale: "en" | "es";
   created_at: string;
   metadata: Record<string, unknown> | null;
+};
+
+type AssistantThreadIdRow = {
+  id: number;
+};
+
+type AssistantMessageRow = {
+  role: AssistantMessageRecord["role"];
+  content: string;
+  citations: unknown[] | null;
+  confidence: number | string | null;
+  created_at: string;
 };
 
 export function resolveDemoDataMode(env: SupabaseEnv): DemoDataMode {
@@ -486,8 +518,92 @@ export function createSupabaseRepository(
         created_at: event.createdAt,
         metadata: event.metadata
       });
+    },
+    async listAssistantMessages(threadSlug: string) {
+      const threads = await fetchRows<AssistantThreadIdRow>("assistant_threads", {
+        select: "id",
+        filters: { slug: `eq.${threadSlug}` },
+        limit: 1
+      });
+      const threadId = threads[0]?.id;
+
+      if (!threadId) {
+        return [];
+      }
+
+      const rows = await fetchRows<AssistantMessageRow>("assistant_messages", {
+        select: "role,content,citations,confidence,created_at",
+        filters: { thread_id: `eq.${threadId}` },
+        order: "created_at.asc"
+      });
+
+      return rows.map(mapAssistantMessage);
+    },
+    async recordAssistantExchange(exchange: AssistantExchangeInsert) {
+      const threadId = await ensureAssistantThread({
+        fetchRows,
+        insertRow,
+        exchange
+      });
+
+      await insertRow("assistant_messages", [
+        {
+          thread_id: threadId,
+          role: "user",
+          content: exchange.userContent,
+          citations: [],
+          confidence: null
+        },
+        {
+          thread_id: threadId,
+          role: "assistant",
+          content: exchange.assistantContent,
+          citations: exchange.citations,
+          confidence: exchange.confidence ?? null
+        }
+      ]);
     }
   };
+}
+
+async function ensureAssistantThread({
+  fetchRows,
+  insertRow,
+  exchange
+}: {
+  fetchRows: ReturnType<typeof createPostgrestReader>;
+  insertRow: ReturnType<typeof createPostgrestInserter>;
+  exchange: AssistantExchangeInsert;
+}) {
+  const existing = await fetchRows<AssistantThreadIdRow>("assistant_threads", {
+    select: "id",
+    filters: { slug: `eq.${exchange.threadSlug}` },
+    limit: 1
+  });
+
+  if (existing[0]?.id) {
+    return existing[0].id;
+  }
+
+  await insertRow("assistant_threads", {
+    slug: exchange.threadSlug,
+    title: exchange.title,
+    locale: exchange.locale,
+    context: {}
+  });
+
+  const created = await fetchRows<AssistantThreadIdRow>("assistant_threads", {
+    select: "id",
+    filters: { slug: `eq.${exchange.threadSlug}` },
+    limit: 1
+  });
+  const threadId = created[0]?.id;
+
+  if (!threadId) {
+    throw new Error(`Assistant thread was not persisted: ${exchange.threadSlug}`);
+  }
+
+  return threadId;
 }
 
 function createPostgrestReader(config: SupabaseReadConfig) {
@@ -575,7 +691,7 @@ function createPostgrestInserter(config: SupabaseReadConfig) {
 
   return async function insertRow(
     table: string,
-    row: Record<string, unknown>
+    row: Record<string, unknown> | Array<Record<string, unknown>>
   ): Promise<void> {
     const response = await fetchImpl(`${baseUrl}/rest/v1/${table}`, {
       method: "POST",
@@ -728,6 +844,19 @@ function mapAiUsageEvent(row: AiUsageEventRow): AiUsageEventRecord {
     locale: row.locale,
     createdAt: row.created_at,
     metadata: row.metadata ?? {}
+  };
+}
+
+function mapAssistantMessage(row: AssistantMessageRow): AssistantMessageRecord {
+  return {
+    role: row.role,
+    content: row.content,
+    citations: row.citations ?? [],
+    confidence:
+      row.confidence === null || row.confidence === undefined
+        ? undefined
+        : Number(row.confidence),
+    createdAt: row.created_at
   };
 }
 
