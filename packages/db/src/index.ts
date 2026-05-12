@@ -187,9 +187,21 @@ export type ReportRecord = {
   title: string;
   reportType: string;
   status: string;
+  locale: "en" | "es";
   periodStart?: string;
   periodEnd?: string;
   content: Record<string, unknown>;
+  citations: unknown[];
+  provider?: string;
+  requestedProvider?: string;
+  model?: string;
+  estimatedCostUsd: number;
+  legalReviewRequired: boolean;
+  generatedAt: string;
+};
+
+export type ReportInsert = Omit<ReportRecord, "generatedAt"> & {
+  generatedAt?: string;
 };
 
 export type AiUsageEventRecord = {
@@ -259,6 +271,7 @@ export type DemoRepository = {
   listWorkflowRuns(): Promise<WorkflowRunRecord[]>;
   recordWorkflowRun(run: WorkflowRunInsert): Promise<void>;
   listReports(): Promise<ReportRecord[]>;
+  recordReport(report: ReportInsert): Promise<void>;
   listAiUsageEvents(): Promise<AiUsageEventRecord[]>;
   recordAiUsageEvent(event: AiUsageEventInsert): Promise<void>;
   listAssistantMessages(threadSlug: string): Promise<AssistantMessageRecord[]>;
@@ -379,9 +392,17 @@ type ReportRow = {
   title: string;
   report_type: string;
   status: string;
+  locale: "en" | "es";
   period_start: string | null;
   period_end: string | null;
   content: Record<string, unknown> | null;
+  citations: unknown[] | null;
+  provider: string | null;
+  requested_provider: string | null;
+  model: string | null;
+  estimated_cost_usd: number | string | null;
+  legal_review_required: boolean | null;
+  generated_at: string;
 };
 
 type AiUsageEventRow = {
@@ -569,6 +590,25 @@ export function createSupabaseRepository(
         order: "generated_at.desc"
       });
       return rows.map(mapReport);
+    },
+    async recordReport(report: ReportInsert) {
+      await insertRow("reports", {
+        slug: report.slug,
+        title: report.title,
+        report_type: report.reportType,
+        status: report.status,
+        locale: report.locale,
+        period_start: report.periodStart,
+        period_end: report.periodEnd,
+        content: report.content,
+        citations: report.citations,
+        provider: report.provider,
+        requested_provider: report.requestedProvider,
+        model: report.model,
+        estimated_cost_usd: report.estimatedCostUsd,
+        legal_review_required: report.legalReviewRequired,
+        generated_at: report.generatedAt
+      });
     },
     async listAiUsageEvents() {
       const rows = await fetchRows<AiUsageEventRow>("ai_usage_events", {
@@ -911,9 +951,17 @@ function mapReport(row: ReportRow): ReportRecord {
     title: row.title,
     reportType: row.report_type,
     status: row.status,
+    locale: row.locale,
     periodStart: row.period_start ?? undefined,
     periodEnd: row.period_end ?? undefined,
-    content: row.content ?? {}
+    content: row.content ?? {},
+    citations: row.citations ?? [],
+    provider: row.provider ?? undefined,
+    requestedProvider: row.requested_provider ?? undefined,
+    model: row.model ?? undefined,
+    estimatedCostUsd: Number(row.estimated_cost_usd ?? 0),
+    legalReviewRequired: row.legal_review_required ?? false,
+    generatedAt: row.generated_at
   };
 }
 

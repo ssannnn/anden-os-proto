@@ -1,6 +1,7 @@
 "use client";
 
 import type { DashboardData } from "@anden/db";
+import type { WeeklyOperatingBrief } from "@anden/reports";
 import {
   AlertTriangle,
   ArrowRight,
@@ -12,6 +13,7 @@ import {
   Scale,
   Sparkles
 } from "lucide-react";
+import { useState } from "react";
 import { useLocale } from "../shell/locale-context";
 
 const toneClass = {
@@ -41,6 +43,39 @@ export function DashboardView({
 }) {
   const { locale } = useLocale();
   const isSpanish = locale === "es";
+  const [brief, setBrief] = useState<WeeklyOperatingBrief | undefined>();
+  const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
+  const [briefError, setBriefError] = useState<string | undefined>();
+
+  async function generateBrief() {
+    setIsGeneratingBrief(true);
+    setBriefError(undefined);
+
+    try {
+      const response = await fetch("/api/reports/weekly", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ locale })
+      });
+      const payload = (await response.json()) as {
+        ok: boolean;
+        report?: WeeklyOperatingBrief;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.ok || !payload.report) {
+        throw new Error(payload.error ?? "Weekly brief generation failed");
+      }
+
+      setBrief(payload.report);
+    } catch (error) {
+      setBriefError(
+        error instanceof Error ? error.message : "Weekly brief generation failed"
+      );
+    } finally {
+      setIsGeneratingBrief(false);
+    }
+  }
 
   return (
     <section className="space-y-5">
@@ -70,10 +105,16 @@ export function DashboardView({
           </span>
           <button
             type="button"
+            onClick={() => void generateBrief()}
+            disabled={isGeneratingBrief}
             className="inline-flex h-11 items-center justify-between gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--anden-lime)] px-4 text-sm font-semibold text-[var(--anden-brown-dark)]"
           >
             <span>
-              {isSpanish
+              {isGeneratingBrief
+                ? isSpanish
+                  ? "Generando brief..."
+                  : "Generating brief..."
+                : isSpanish
                 ? "Generar brief operativo semanal"
                 : "Generate Weekly Operating Brief"}
             </span>
@@ -81,6 +122,16 @@ export function DashboardView({
           </button>
         </div>
       </div>
+
+      {briefError ? (
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--anden-orange)] p-4 text-sm font-semibold text-[var(--anden-brown-dark)]">
+          {briefError}
+        </div>
+      ) : null}
+
+      {brief ? (
+        <GeneratedBriefPanel brief={brief} isSpanish={isSpanish} />
+      ) : null}
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
         {data.metrics.map((metric) => (
@@ -273,6 +324,93 @@ export function DashboardView({
           </article>
         </div>
       </div>
+    </section>
+  );
+}
+
+function GeneratedBriefPanel({
+  brief,
+  isSpanish
+}: {
+  brief: WeeklyOperatingBrief;
+  isSpanish: boolean;
+}) {
+  return (
+    <article className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-5">
+      <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--anden-orange)]">
+            {isSpanish ? "Brief generado" : "Generated Weekly Operating Brief"}
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
+            {brief.title}
+          </h2>
+          <p className="mt-2 text-sm font-medium text-[var(--color-muted)]">
+            {brief.provider}/{brief.model} · {formatUsd(brief.estimatedCostUsd)}
+          </p>
+        </div>
+        {brief.legalReviewRequired ? (
+          <div className="inline-flex items-center gap-2 rounded-xl bg-[var(--anden-orange)] px-3 py-2 text-sm font-bold text-[var(--anden-brown-dark)]">
+            <Scale size={16} aria-hidden />
+            {isSpanish ? "Revisión de Legal" : "Legal review items"}
+          </div>
+        ) : null}
+      </div>
+
+      <p className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-canvas)] p-4 text-sm leading-6 text-[var(--color-ink)]">
+        {brief.content.executiveSummary}
+      </p>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <BriefList title="Progress" items={brief.content.progress} />
+        <BriefList title="Key risks" items={brief.content.keyRisks} />
+        <BriefList title="Opportunities" items={brief.content.opportunities} />
+        <BriefList title="Blockers" items={brief.content.blockers} />
+        <BriefList
+          title="Recommended next actions"
+          items={brief.content.recommendedNextActions}
+        />
+        <BriefList
+          title="Legal review items"
+          items={brief.content.legalReviewItems}
+        />
+      </div>
+
+      <section className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-canvas)] p-4">
+        <h3 className="text-sm font-bold text-[var(--color-ink)]">
+          Source citations
+        </h3>
+        <div className="mt-3 grid gap-2 md:grid-cols-2">
+          {brief.citations.map((citation) => (
+            <div
+              key={citation.chunkId}
+              className="rounded-xl border border-[var(--color-border)] p-3"
+            >
+              <p className="text-sm font-semibold text-[var(--color-ink)]">
+                {citation.documentTitle}
+              </p>
+              <p className="mt-1 text-xs font-medium text-[var(--color-muted)]">
+                {citation.section} · {Math.round(citation.confidence * 100)}%
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </article>
+  );
+}
+
+function BriefList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-canvas)] p-4">
+      <h3 className="text-sm font-bold text-[var(--color-ink)]">{title}</h3>
+      <ul className="mt-3 grid gap-2">
+        {items.map((item) => (
+          <li key={item} className="text-sm leading-6 text-[var(--color-muted)]">
+            {item}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

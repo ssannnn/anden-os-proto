@@ -95,6 +95,22 @@ assertIncludes(
   "grant select, insert, update on public.workflow_runs to service_role",
   "workflow run service role write grant"
 );
+assertIncludes(
+  readFileSync(
+    "supabase/migrations/202605120006_report_generation_metadata.sql",
+    "utf8"
+  ),
+  "grant select, insert, update on public.reports to service_role",
+  "report service role write grant"
+);
+assertIncludes(
+  readFileSync(
+    "supabase/migrations/202605120006_report_generation_metadata.sql",
+    "utf8"
+  ),
+  "estimated_cost_usd numeric",
+  "report generation cost metadata"
+);
 assertIncludes(seed, "locale", "AI usage locale seed column");
 assertIncludes(seed, "source_pack_version", "document chunk source metadata");
 assertIncludes(seed, "original_language", "document chunk language metadata");

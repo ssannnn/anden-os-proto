@@ -45,3 +45,28 @@ test("dashboard presents the Anden operating pulse with mock metrics", async ({
     page.getByRole("button", { name: /generate weekly operating brief/i })
   ).toBeVisible();
 });
+
+test("dashboard generates a source-backed weekly operating brief", async ({
+  page
+}) => {
+  await unlockDemo(page);
+
+  await page
+    .getByRole("button", { name: /generate weekly operating brief/i })
+    .click();
+
+  await expect(page.getByText(/Generated Weekly Operating Brief/i)).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Weekly Operating Brief/i })
+  ).toBeVisible();
+  await expect(page.getByText(/AtlasPay/i).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Progress/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Key risks/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Recommended next actions/i })
+  ).toBeVisible();
+  await expect(page.getByText(/Legal review items/i).first()).toBeVisible();
+  await expect(page.getByText(/Source citations/i)).toBeVisible();
+  await expect(page.getByText(/Weekly Operating Brief Template/i)).toBeVisible();
+  await expect(page.getByText(/mock\/mock-deterministic/i)).toBeVisible();
+});

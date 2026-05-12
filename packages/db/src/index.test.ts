@@ -321,3 +321,100 @@ describe("workflow run repository", () => {
     });
   });
 });
+
+describe("report repository", () => {
+  it("lists reports with generation metadata and citations", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(
+      Response.json([
+        {
+          slug: "weekly-operating-brief-2026-05-12",
+          title: "Weekly Operating Brief - May 12, 2026",
+          report_type: "weekly_operating_brief",
+          status: "Generated",
+          locale: "en",
+          period_start: "2026-05-05",
+          period_end: "2026-05-12",
+          content: { executiveSummary: "AtlasPay is the priority." },
+          citations: [{ documentTitle: "Weekly Operating Brief Template" }],
+          provider: "mock",
+          requested_provider: "openai",
+          model: "mock-deterministic",
+          estimated_cost_usd: "0.000000",
+          legal_review_required: true,
+          generated_at: "2026-05-12T00:00:00.000Z"
+        }
+      ])
+    );
+    const repo = createSupabaseRepository({
+      url: "http://127.0.0.1:54321",
+      key: "service-key",
+      fetch
+    });
+
+    await expect(repo.listReports()).resolves.toEqual([
+      {
+        slug: "weekly-operating-brief-2026-05-12",
+        title: "Weekly Operating Brief - May 12, 2026",
+        reportType: "weekly_operating_brief",
+        status: "Generated",
+        locale: "en",
+        periodStart: "2026-05-05",
+        periodEnd: "2026-05-12",
+        content: { executiveSummary: "AtlasPay is the priority." },
+        citations: [{ documentTitle: "Weekly Operating Brief Template" }],
+        provider: "mock",
+        requestedProvider: "openai",
+        model: "mock-deterministic",
+        estimatedCostUsd: 0,
+        legalReviewRequired: true,
+        generatedAt: "2026-05-12T00:00:00.000Z"
+      }
+    ]);
+  });
+
+  it("persists a generated weekly operating brief", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(new Response(null, { status: 201 }));
+    const repo = createSupabaseRepository({
+      url: "http://127.0.0.1:54321",
+      key: "service-key",
+      fetch
+    });
+
+    await repo.recordReport({
+      slug: "weekly-operating-brief-2026-05-12",
+      title: "Weekly Operating Brief - May 12, 2026",
+      reportType: "weekly_operating_brief",
+      status: "Generated",
+      locale: "en",
+      periodStart: "2026-05-05",
+      periodEnd: "2026-05-12",
+      content: { executiveSummary: "AtlasPay is the priority." },
+      citations: [{ documentTitle: "Weekly Operating Brief Template" }],
+      provider: "mock",
+      requestedProvider: "openai",
+      model: "mock-deterministic",
+      estimatedCostUsd: 0,
+      legalReviewRequired: true,
+      generatedAt: "2026-05-12T00:00:00.000Z"
+    });
+
+    const body = JSON.parse(String(fetch.mock.calls[0]?.[1]?.body));
+    expect(body).toEqual({
+      slug: "weekly-operating-brief-2026-05-12",
+      title: "Weekly Operating Brief - May 12, 2026",
+      report_type: "weekly_operating_brief",
+      status: "Generated",
+      locale: "en",
+      period_start: "2026-05-05",
+      period_end: "2026-05-12",
+      content: { executiveSummary: "AtlasPay is the priority." },
+      citations: [{ documentTitle: "Weekly Operating Brief Template" }],
+      provider: "mock",
+      requested_provider: "openai",
+      model: "mock-deterministic",
+      estimated_cost_usd: 0,
+      legal_review_required: true,
+      generated_at: "2026-05-12T00:00:00.000Z"
+    });
+  });
+});

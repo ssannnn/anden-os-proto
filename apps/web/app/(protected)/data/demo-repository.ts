@@ -17,6 +17,8 @@ import {
   type DemoDataMode,
   type DocumentRecord,
   type Partner,
+  type ReportInsert,
+  type ReportRecord,
   type SupabaseEnv,
   type WorkflowRecord,
   type WorkflowRunInsert,
@@ -143,6 +145,10 @@ export async function getWorkflowRunsData(): Promise<
   );
 }
 
+export async function getReportsData(): Promise<DemoDataResult<ReportRecord[]>> {
+  return readSupabaseOrMock((repo) => repo.listReports(), mockReports);
+}
+
 export function createRuntimeAiClient() {
   return createAiClient({
     env: getRuntimeAiEnv(),
@@ -208,6 +214,21 @@ export async function recordWorkflowRun(run: WorkflowRunInsert) {
     await repo.recordWorkflowRun(run);
   } catch (error) {
     console.warn("Supabase workflow run write failed.", error);
+  }
+}
+
+export async function recordReport(report: ReportInsert) {
+  const config = getSupabaseWriteConfig(getRuntimeSupabaseEnv());
+
+  if (!config) {
+    return;
+  }
+
+  try {
+    const repo = createSupabaseRepository(config);
+    await repo.recordReport(report);
+  } catch (error) {
+    console.warn("Supabase report write failed.", error);
   }
 }
 
@@ -389,6 +410,39 @@ const mockWorkflowRuns: WorkflowRunRecord[] = [
     inputs: { topic: "Digital Zone operations" },
     outputs: { outline: "Institutional content outline generated" },
     startedAt: "2026-05-11T11:30:00.000Z"
+  }
+];
+
+const mockReports: ReportRecord[] = [
+  {
+    slug: "weekly-operating-brief-2026-05-11",
+    title: "Weekly Operating Brief - May 11, 2026",
+    reportType: "weekly_operating_brief",
+    status: "Draft",
+    locale: "en",
+    periodStart: "2026-05-04",
+    periodEnd: "2026-05-11",
+    content: {
+      progress: ["Dashboard, CRM, and document library slices are live."],
+      risks: ["Legal review required for regulatory summaries before external use."],
+      next_steps: ["Build AI provider adapter and RAG indexing."],
+      opportunities: ["Use founder briefing to demonstrate operating leverage."],
+      blockers: [],
+      ai_recommendations: ["Prioritize assistant golden path after persistence."]
+    },
+    citations: [
+      {
+        documentTitle: "Weekly Operating Brief Template",
+        sourcePackPath:
+          "supabase/seed/source-pack/internal/weekly-operating-brief-template.md"
+      }
+    ],
+    provider: "mock",
+    requestedProvider: "mock",
+    model: "mock-seed",
+    estimatedCostUsd: 0,
+    legalReviewRequired: true,
+    generatedAt: "2026-05-11T00:00:00.000Z"
   }
 ];
 

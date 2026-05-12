@@ -606,9 +606,16 @@ insert into public.reports (
   title,
   report_type,
   status,
+  locale,
   period_start,
   period_end,
-  content
+  content,
+  citations,
+  provider,
+  requested_provider,
+  model,
+  estimated_cost_usd,
+  legal_review_required
 )
 values
   (
@@ -616,6 +623,7 @@ values
     'Weekly Operating Brief - May 11, 2026',
     'weekly_operating_brief',
     'Draft',
+    'en',
     '2026-05-04',
     '2026-05-11',
     '{
@@ -625,7 +633,13 @@ values
       "opportunities":["Use founder briefing to demonstrate operating leverage."],
       "blockers":[],
       "ai_recommendations":["Prioritize assistant golden path after persistence."]
-    }'
+    }',
+    '[{"documentTitle":"Weekly Operating Brief Template","sourcePackPath":"supabase/seed/source-pack/internal/weekly-operating-brief-template.md"}]',
+    'mock',
+    'mock',
+    'mock-seed',
+    0,
+    true
   );
 
 insert into public.ai_usage_events (
