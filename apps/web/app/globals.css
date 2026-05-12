@@ -28,22 +28,6 @@
   --shadow-card: 0 16px 40px rgb(57 4 0 / 0.08);
 }
 
-:root[data-theme="dark"] {
-  --color-canvas: #230300;
-  --color-surface: #390400;
-  --color-surface-subtle: #48110b;
-  --color-ink: var(--anden-cream-light);
-  --color-body: rgb(247 243 231 / 0.86);
-  --color-muted: rgb(247 243 231 / 0.62);
-  --color-border: rgb(247 243 231 / 0.16);
-  --color-border-strong: rgb(247 243 231 / 0.34);
-  --color-primary: var(--anden-lime);
-  --color-primary-ink: var(--anden-brown-dark);
-  --color-accent: var(--anden-sky);
-  --color-warning: var(--anden-orange);
-  --shadow-card: 0 20px 48px rgb(0 0 0 / 0.28);
-}
-
 * {
   box-sizing: border-box;
 }
@@ -71,7 +55,6 @@ input {
 }
 
 a {
-  color: inherit;
   text-decoration: none;
 }
 

@@ -36,12 +36,14 @@ export function SelectFilter({
   label,
   name,
   value,
-  options
+  options,
+  allLabel = "All"
 }: {
   label: string;
   name: string;
   value?: string;
   options: string[];
+  allLabel?: string;
 }) {
   return (
     <label className="grid gap-2 text-sm font-semibold text-[var(--color-ink)]">
@@ -51,7 +53,7 @@ export function SelectFilter({
         defaultValue={value ?? "All"}
         className="h-11 min-w-40 rounded-xl border border-[var(--color-border)] bg-[var(--color-canvas)] px-3 text-sm font-medium text-[var(--color-ink)]"
       >
-        <option value="All">All</option>
+        <option value="All">{allLabel}</option>
         {options.map((option) => (
           <option key={option} value={option}>
             {option}

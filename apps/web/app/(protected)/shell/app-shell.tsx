@@ -16,16 +16,43 @@ import { usePathname, useRouter } from "next/navigation";
 import { ReactNode } from "react";
 import { LocaleProvider, useLocale } from "./locale-context";
 import { LocaleToggle } from "./locale-toggle";
-import { ThemeToggle } from "./theme-toggle";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
-  { href: "/assistant", label: "Assistant", icon: Bot },
-  { href: "/companies", label: "Companies", icon: Building2 },
-  { href: "/partners", label: "Partners", icon: Handshake },
-  { href: "/documents", label: "Documents", icon: FileText },
-  { href: "/workflows", label: "Workflows", icon: PlayCircle },
-  { href: "/reports", label: "Reports", icon: ScrollText }
+  {
+    href: "/dashboard",
+    label: { en: "Dashboard", es: "Panel" },
+    icon: BarChart3
+  },
+  {
+    href: "/assistant",
+    label: { en: "Assistant", es: "Asistente" },
+    icon: Bot
+  },
+  {
+    href: "/companies",
+    label: { en: "Companies", es: "Empresas" },
+    icon: Building2
+  },
+  {
+    href: "/partners",
+    label: { en: "Partners", es: "Partners" },
+    icon: Handshake
+  },
+  {
+    href: "/documents",
+    label: { en: "Documents", es: "Documentos" },
+    icon: FileText
+  },
+  {
+    href: "/workflows",
+    label: { en: "Workflows", es: "Workflows" },
+    icon: PlayCircle
+  },
+  {
+    href: "/reports",
+    label: { en: "Reports", es: "Reportes" },
+    icon: ScrollText
+  }
 ];
 
 const copy = {
@@ -34,14 +61,16 @@ const copy = {
     subtitle: "AI backoffice demo",
     aiSpend: "Estimated AI spend",
     protected: "Demo protected",
-    lock: "Lock demo"
+    lock: "Lock demo",
+    legalReady: "Legal review ready"
   },
   es: {
     product: "Andén OS",
     subtitle: "Demo de backoffice AI",
     aiSpend: "Gasto AI estimado",
     protected: "Demo protegido",
-    lock: "Bloquear demo"
+    lock: "Bloquear demo",
+    legalReady: "Revision legal lista"
   }
 };
 
@@ -101,7 +130,7 @@ function ShellFrame({ children }: { children: ReactNode }) {
                   }`}
                 >
                   <Icon size={17} aria-hidden />
-                  <span>{item.label}</span>
+                  <span>{item.label[locale]}</span>
                 </Link>
               );
             })}
@@ -115,16 +144,15 @@ function ShellFrame({ children }: { children: ReactNode }) {
               </span>
               <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-2 text-[var(--color-muted)]">
                 <AlertTriangle size={15} aria-hidden />
-                Legal review ready
+                {t.legalReady}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <LocaleToggle />
-              <ThemeToggle />
               <button
                 type="button"
                 onClick={lockDemo}
-                aria-label="Lock demo"
+                aria-label={t.lock}
                 className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm font-semibold text-[var(--color-ink)]"
               >
                 <Lock size={16} aria-hidden />

@@ -3,9 +3,10 @@
 import {
   createContext,
   ReactNode,
+  useEffect,
   useContext,
   useMemo,
-  useState
+  useSyncExternalStore
 } from "react";
 
 export type Locale = "en" | "es";
@@ -16,17 +17,29 @@ type LocaleContextValue = {
 };
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
+const localeChangeEvent = "anden-locale-change";
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
+  const locale = useSyncExternalStore(
+    subscribeToLocale,
+    readStoredLocale,
+    getDefaultLocale
+  );
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    document.documentElement.dataset.theme = "light";
+    window.localStorage.removeItem("anden-theme");
+  }, [locale]);
 
   const value = useMemo<LocaleContextValue>(
     () => ({
       locale,
       setLocale(nextLocale) {
-        setLocaleState(nextLocale);
         window.localStorage.setItem("anden-locale", nextLocale);
         document.documentElement.lang = nextLocale;
+        document.documentElement.dataset.theme = "light";
+        window.dispatchEvent(new Event(localeChangeEvent));
       }
     }),
     [locale]
@@ -45,4 +58,22 @@ export function useLocale() {
   }
 
   return context;
+}
+
+function subscribeToLocale(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(localeChangeEvent, onStoreChange);
+
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(localeChangeEvent, onStoreChange);
+  };
+}
+
+function readStoredLocale(): Locale {
+  return window.localStorage.getItem("anden-locale") === "es" ? "es" : "en";
+}
+
+function getDefaultLocale(): Locale {
+  return "en";
 }

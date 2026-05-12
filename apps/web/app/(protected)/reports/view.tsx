@@ -150,7 +150,7 @@ export function ReportsView({ reports, dataModeLabel }: ReportsViewProps) {
 
               <Link
                 href={`/reports/${report.slug}`}
-                className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-ink)] px-4 text-sm font-semibold text-[var(--anden-cream-light)]"
+                className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-ink)] px-4 text-sm font-semibold text-white"
               >
                 {t.open}
                 <ArrowRight size={16} aria-hidden />
@@ -290,7 +290,7 @@ export function ReportDetailView({
           <button
             type="button"
             onClick={() => void copyReportText()}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-ink)] px-4 text-sm font-semibold text-[var(--anden-cream-light)]"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-ink)] px-4 text-sm font-semibold text-white"
           >
             <Copy size={16} aria-hidden />
             {copied ? t.copied : t.copyReport}

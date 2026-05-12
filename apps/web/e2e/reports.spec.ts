@@ -49,15 +49,16 @@ test("reports history lists weekly briefs and opens a cited detail", async ({
   ).toBeVisible();
 });
 
-test("reports route responds to locale and dark theme controls", async ({ page }) => {
+test("reports route responds to locale and remains light-only", async ({ page }) => {
   await unlockDemo(page);
   await page.goto("/reports");
 
   await page.getByRole("button", { name: /switch to spanish/i }).click();
   await expect(page.getByRole("heading", { name: "Reportes" })).toBeVisible();
   await expect(page.getByText("Periodo: May 4, 2026 - May 11, 2026")).toBeVisible();
-
-  await page.getByRole("button", { name: /switch to dark mode/i }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(
+    page.getByRole("button", { name: /switch to dark mode/i })
+  ).toHaveCount(0);
   await expect(page.getByText("mock/mock-seed")).toBeVisible();
 });

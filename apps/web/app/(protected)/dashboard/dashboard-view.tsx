@@ -100,7 +100,8 @@ export function DashboardView({
           <span
             className={`rounded-lg border px-3 py-2 text-xs font-bold ${aiSpendToneClass[data.aiSpendStatus.state]}`}
           >
-            AI spend {formatUsd(data.aiSpendStatus.totalCostUsd)} /{" "}
+            {isSpanish ? "Gasto AI" : "AI spend"}{" "}
+            {formatUsd(data.aiSpendStatus.totalCostUsd)} /{" "}
             {formatUsd(data.aiSpendStatus.maxCostUsd)}
           </span>
           <button
@@ -177,7 +178,9 @@ export function DashboardView({
             />
             <PulseCard
               icon={<Scale size={16} aria-hidden />}
-              title="Legal review required"
+              title={
+                isSpanish ? "Requiere revision legal" : "Legal review required"
+              }
               body={
                 isSpanish
                   ? "Checklist fintech y memo ARCA marcados para revisión."
@@ -186,7 +189,11 @@ export function DashboardView({
             />
             <PulseCard
               icon={<Bot size={16} aria-hidden />}
-              title={`AI budget ${data.aiSpendStatus.state}`}
+              title={
+                isSpanish
+                  ? `Presupuesto AI ${data.aiSpendStatus.state}`
+                  : `AI budget ${data.aiSpendStatus.state}`
+              }
               body={
                 isSpanish
                   ? `${Math.round(data.aiSpendStatus.percentUsed * 100)}% del presupuesto usado; hard-stop en ${formatUsd(data.aiSpendStatus.maxCostUsd)}.`
@@ -254,7 +261,8 @@ export function DashboardView({
                 </div>
                 <div className="min-w-36">
                   <p className="text-right text-sm font-semibold text-[var(--color-ink)]">
-                    {company.readiness}% readiness
+                    {company.readiness}%{" "}
+                    {isSpanish ? "preparacion" : "readiness"}
                   </p>
                   <div className="mt-2 h-2 rounded-full bg-[var(--color-border)]">
                     <div
@@ -335,6 +343,20 @@ function GeneratedBriefPanel({
   brief: WeeklyOperatingBrief;
   isSpanish: boolean;
 }) {
+  const briefLabels = {
+    progress: isSpanish ? "Avances" : "Progress",
+    risks: isSpanish ? "Riesgos clave" : "Key risks",
+    opportunities: isSpanish ? "Oportunidades" : "Opportunities",
+    blockers: isSpanish ? "Bloqueos" : "Blockers",
+    nextActions: isSpanish
+      ? "Proximas acciones recomendadas"
+      : "Recommended next actions",
+    legalItems: isSpanish
+      ? "Items para revision legal"
+      : "Legal review items",
+    sources: isSpanish ? "Citas de fuentes" : "Source citations"
+  };
+
   return (
     <article className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-5">
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
@@ -362,23 +384,26 @@ function GeneratedBriefPanel({
       </p>
 
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
-        <BriefList title="Progress" items={brief.content.progress} />
-        <BriefList title="Key risks" items={brief.content.keyRisks} />
-        <BriefList title="Opportunities" items={brief.content.opportunities} />
-        <BriefList title="Blockers" items={brief.content.blockers} />
+        <BriefList title={briefLabels.progress} items={brief.content.progress} />
+        <BriefList title={briefLabels.risks} items={brief.content.keyRisks} />
         <BriefList
-          title="Recommended next actions"
+          title={briefLabels.opportunities}
+          items={brief.content.opportunities}
+        />
+        <BriefList title={briefLabels.blockers} items={brief.content.blockers} />
+        <BriefList
+          title={briefLabels.nextActions}
           items={brief.content.recommendedNextActions}
         />
         <BriefList
-          title="Legal review items"
+          title={briefLabels.legalItems}
           items={brief.content.legalReviewItems}
         />
       </div>
 
       <section className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-canvas)] p-4">
         <h3 className="text-sm font-bold text-[var(--color-ink)]">
-          Source citations
+          {briefLabels.sources}
         </h3>
         <div className="mt-3 grid gap-2 md:grid-cols-2">
           {brief.citations.map((citation) => (

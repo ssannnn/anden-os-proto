@@ -54,19 +54,39 @@ const workflowDefaults: WorkflowFormState = {
   }
 };
 
-const workflowInputLabels: Record<WorkflowSlug, Record<string, string>> = {
-  "company-onboarding": {
-    company: "Company",
-    sector: "Sector",
-    country: "Country"
+const workflowInputLabels: Record<
+  WorkflowLocale,
+  Record<WorkflowSlug, Record<string, string>>
+> = {
+  en: {
+    "company-onboarding": {
+      company: "Company",
+      sector: "Sector",
+      country: "Country"
+    },
+    "prepare-meeting": {
+      company: "Company",
+      stakeholder: "Stakeholder",
+      objective: "Objective"
+    },
+    "publish-institutional-content": {
+      topic: "Topic"
+    }
   },
-  "prepare-meeting": {
-    company: "Company",
-    stakeholder: "Stakeholder",
-    objective: "Objective"
-  },
-  "publish-institutional-content": {
-    topic: "Topic"
+  es: {
+    "company-onboarding": {
+      company: "Empresa",
+      sector: "Sector",
+      country: "Pais"
+    },
+    "prepare-meeting": {
+      company: "Empresa",
+      stakeholder: "Stakeholder",
+      objective: "Objetivo"
+    },
+    "publish-institutional-content": {
+      topic: "Tema"
+    }
   }
 };
 
@@ -86,7 +106,8 @@ const copy = {
     history: "Run history",
     noHistory: "No workflow runs yet.",
     steps: "Step progression",
-    error: "Workflow request failed"
+    error: "Workflow request failed",
+    savedRuns: "saved runs"
   },
   es: {
     eyebrow: "Automatizacion",
@@ -103,7 +124,8 @@ const copy = {
     history: "Historial de corridas",
     noHistory: "Todavia no hay corridas.",
     steps: "Progreso de pasos",
-    error: "Fallo la solicitud del workflow"
+    error: "Fallo la solicitud del workflow",
+    savedRuns: "corridas guardadas"
   }
 } as const;
 
@@ -251,7 +273,7 @@ export function WorkflowsView({
           <SectionTitle
             icon={<History size={18} aria-hidden />}
             title={t.history}
-            description={`${runs.length} saved runs`}
+            description={`${runs.length} ${t.savedRuns}`}
           />
           <div className="mt-5 space-y-3">
             {runs.length === 0 ? (
@@ -266,14 +288,14 @@ export function WorkflowsView({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-semibold text-[var(--color-ink)]">
-                      {run.workflowName}
+                      {workflowName(run.workflowSlug as WorkflowSlug, locale)}
                     </p>
                     <span className="rounded-lg bg-[var(--anden-lime)] px-2.5 py-1 text-xs font-bold text-[var(--anden-brown-dark)]">
                       {run.state} / {run.progress}%
                     </span>
                   </div>
                   <p className="mt-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-                    {run.category}
+                    {workflowCategory(run.workflowSlug as WorkflowSlug, locale)}
                   </p>
                 </div>
               ))
@@ -300,8 +322,9 @@ function WorkflowCard({
   onFieldChange(field: string, value: string): void;
   onSubmit(): void;
 }) {
-  const labels = workflowInputLabels[workflow.slug];
+  const labels = workflowInputLabels[locale][workflow.slug];
   const t = copy[locale];
+  const workflowDisplayName = workflowName(workflow.slug, locale);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -316,10 +339,10 @@ function WorkflowCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--anden-orange)]">
-            {workflow.category}
+            {workflowCategory(workflow.slug, locale)}
           </p>
           <h2 className="mt-2 text-lg font-semibold text-[var(--color-ink)]">
-            {workflow.name}
+            {workflowDisplayName}
           </h2>
         </div>
         <div className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-ink)] text-[var(--anden-cream-light)]">
@@ -359,8 +382,12 @@ function WorkflowCard({
         disabled={isRunning}
         className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--anden-blue)] px-4 text-sm font-semibold text-white disabled:opacity-60"
       >
-        {isRunning ? <Loader2 size={16} aria-hidden /> : <Play size={16} aria-hidden />}
-        {isRunning ? t.running : `${t.run} ${workflow.name.toLowerCase()}`}
+        {isRunning ? (
+          <Loader2 size={16} aria-hidden />
+        ) : (
+          <Play size={16} aria-hidden />
+        )}
+        {isRunning ? t.running : `${t.run} ${workflowDisplayName.toLowerCase()}`}
       </button>
     </form>
   );
@@ -515,8 +542,8 @@ function toWorkflowRunRecord(
 ): WorkflowRunRecord {
   return {
     workflowSlug: result.workflowSlug,
-    workflowName: workflowName(result.workflowSlug),
-    category: workflowCategory(result.workflowSlug),
+    workflowName: workflowName(result.workflowSlug, "en"),
+    category: workflowCategory(result.workflowSlug, "en"),
     state: result.state,
     progress: result.progress,
     inputs,
@@ -584,22 +611,36 @@ function formatOutputLabel(key: string) {
     .replace(/^./, (character) => character.toUpperCase());
 }
 
-function workflowName(slug: WorkflowSlug) {
+function workflowName(slug: WorkflowSlug, locale: WorkflowLocale) {
   return (
     {
-      "company-onboarding": "Company onboarding",
-      "prepare-meeting": "Prepare meeting",
-      "publish-institutional-content": "Publish institutional content"
+      en: {
+        "company-onboarding": "Company onboarding",
+        "prepare-meeting": "Prepare meeting",
+        "publish-institutional-content": "Publish institutional content"
+      },
+      es: {
+        "company-onboarding": "Onboarding de empresa",
+        "prepare-meeting": "Preparar reunion",
+        "publish-institutional-content": "Publicar contenido institucional"
+      }
     } as const
-  )[slug];
+  )[locale][slug];
 }
 
-function workflowCategory(slug: WorkflowSlug) {
+function workflowCategory(slug: WorkflowSlug, locale: WorkflowLocale) {
   return (
     {
-      "company-onboarding": "onboarding",
-      "prepare-meeting": "briefing",
-      "publish-institutional-content": "content"
+      en: {
+        "company-onboarding": "onboarding",
+        "prepare-meeting": "briefing",
+        "publish-institutional-content": "content"
+      },
+      es: {
+        "company-onboarding": "onboarding",
+        "prepare-meeting": "briefing",
+        "publish-institutional-content": "contenido"
+      }
     } as const
-  )[slug];
+  )[locale][slug];
 }
